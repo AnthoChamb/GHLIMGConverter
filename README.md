@@ -13,10 +13,12 @@ A python script and module to convert popular image file formats to IMG files fo
 `--height` to specify the height of the output IMG
 
 ## Requirements
-This program currently requires [PVRTexToolCLI](https://www.imgtec.com/developers/powervr-sdk-tools/pvrtextool/) installed and added to your path environment variable
+This program currently requires [PVRTexToolCLI.exe](https://www.imgtec.com/developers/powervr-sdk-tools/pvrtextool/) installed and added to your `config.ini` file
+
+Wii U conversion also requires [gtx_extractor.py](https://github.com/aboood40091/GTX-Extractor) installed and added to your `config.ini` file
 
 ## Contributing
-Feel free to contribute for more types and platforms support
+Feel free to contribute for more formats and platforms support
 
 ## Thanks
 A special thanks to everyone in the [GHLRE organization](https://github.com/ghlre) and Discord who helped figure out the image formats before me!
