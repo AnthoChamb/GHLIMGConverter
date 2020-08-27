@@ -1,16 +1,20 @@
 # GHL IMG Converter
-A python script and module to convert popular image file formats to IMG files for Guitar Hero Live
+A python script and module to extract and convert to IMG files used in Guitar Hero Live
 
 ## Arguments
+`--extract` to extract a IMG file to a decompressed format
+
 `--platform` to specify the platform of the output IMG
 
-`--input` to specify the path of the input image
+`--input` to specify the path of the input image or IMG file when extracting
 
-`--output` to specify the path of the output IMG
+`--output` to specify the path of the output IMG or decompressed format when extracting
 
 `--width` to specify the width of the output IMG
 
 `--height` to specify the height of the output IMG
+
+`--format` to specify the DDS format of the output IMG, used in some PS3 and 360 textures
 
 ## Requirements
 This program currently requires [PVRTexToolCLI.exe](https://www.imgtec.com/developers/powervr-sdk-tools/pvrtextool/) installed and added to your `config.ini` file
