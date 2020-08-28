@@ -232,7 +232,7 @@ def __extract_wiiu_img(source, dest):
     subprocess.call(config['path']['gtx_extract'] + ' -o "' + dest + '" "' + source + '.gtx"', shell=True)
     os.remove(source + '.gtx')
 
-def extract_img(source, dest):
+def extract_img(source, dest, plat=None):
     """
     Extract the source IMG file to a decompressed format
     """
@@ -241,16 +241,25 @@ def extract_img(source, dest):
     img.close()
 
     # Identify the platform of the IMG
-    if header[19] == platform['360']:
+    if plat == None:
+        if header[19] == platform['360']:
+            __extract_360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), 'BC1' if header[10:14] == dds['BC1'][0] else 'BC3')
+        elif header[19] == platform['ps3']:
+            __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), 'BC1' if header[10:14] == dds['BC1'][0] else 'BC3')
+        elif header[19] == platform['wiiu']:
+            __extract_wiiu_img(source, dest)
+        elif header[19] == platform['ios']:
+            __extract_ios_img(source, dest)
+        else:
+            raise ValueError('Platform not supported')
+    elif plat == '360':
         __extract_360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), 'BC1' if header[10:14] == dds['BC1'][0] else 'BC3')
-    elif header[19] == platform['ps3']:
+    elif plat == 'ps3':
         __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), 'BC1' if header[10:14] == dds['BC1'][0] else 'BC3')
-    elif header[19] == platform['wiiu']:
+    elif plat == 'wiiu':
         __extract_wiiu_img(source, dest)
-    elif header[19] == platform['ios']:
+    elif plat == 'ios':
         __extract_ios_img(source, dest)
-    else:
-        raise ValueError('Platform not supported')
 
 if __name__ == "__main__":
     import sys
@@ -264,7 +273,7 @@ if __name__ == "__main__":
 
         parser = argparse.ArgumentParser(description='A python script to extract and convert to IMG files used in some FSG games like Guitar Hero Live and DJ Hero 2.')
         parser.add_argument('--extract', action='store_true', default=False, help='Extract a IMG file to a decompressed format')
-        parser.add_argument('--platform', choices=['ps3', 'ios', '360', 'wiiu'], help='Platform of the output IMG')
+        parser.add_argument('--platform', choices=['ps3', 'ios', '360', 'wiiu'], help='Platform of the IMG')
         parser.add_argument('--input', required=True, help='Path of the input image or a IMG file when extracting')
         parser.add_argument('--output', help='Path to the output IMG or a decompressed format when extracting')
         parser.add_argument('--width', type=int, help='Width of the output IMG')
@@ -274,16 +283,15 @@ if __name__ == "__main__":
         args = parser.parse_args()
 
         if (args.extract):
-            extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'))
-        elif args.platform != None:
-            if args.platform == 'ps3':
-                create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.format)
-            elif args.platform == 'ios':
-                create_ios_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
-            elif args.platform == '360':
-                create_360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.format)
-            elif args.platform == 'wiiu':
-                create_wiiu_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
+            extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'), args.platform)
+        elif args.platform == 'ps3':
+            create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.format)
+        elif args.platform == 'ios':
+            create_ios_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
+        elif args.platform == '360':
+            create_360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.format)
+        elif args.platform == 'wiiu':
+            create_wiiu_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
         else:
             parser.print_help()
             print('You must specify a platform to convert to')

@@ -4,7 +4,7 @@ A python script and module to extract and convert to IMG files used in some FSG 
 ## Arguments
 `--extract` to extract a IMG file to a decompressed format
 
-`--platform` to specify the platform of the output IMG
+`--platform` to specify the platform of the IMG
 
 `--input` to specify the path of the input image or IMG file when extracting
 
