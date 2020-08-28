@@ -2,6 +2,8 @@ import configparser
 import os
 import subprocess
 
+from PIL import Image
+
 config = configparser.ConfigParser()
 config.read('config.ini')
 
@@ -64,25 +66,33 @@ def __dds_header(width, height, format):
     header[84:88] = dds[format][1]
     return header
 
-def create_ps3_img(source, dest, width, height, format='BC1'):
+def create_ps3_img(source, dest, width=None, height=None, format='BC1'):
     """
-    Convert the source image file to a PlayStation 3 IMG file for GHL with the specified size and optional format.
+    Convert the source image file to a PlayStation 3 IMG file with the specified size and optional format.
     """
+    # Get original image width and height if not specified
+    if width == None or height == None:
+        width, height = Image.open(source).size
+
     # Resize and convert the original image
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format)
 
     blob = __read(dest + '.dds')
     os.remove(dest + '.dds')
 
-    # Replace default 128 bytes header with PS3 GHL 20 bytes header
+    # Replace default 128 bytes header with PS3 IMG 20 bytes header
     blob[0:128] = __img_header(bytearray.fromhex('00 00 00 00 00 01 00 00 00 00 00 05 00 00 01 00 00 00 03 01'), width, height, format)
 
     __write(dest, blob)
 
-def create_ios_img(source, dest, width, height):
+def create_ios_img(source, dest, width=None, height=None):
     """
-    Convert the source image file to an iOS IMG file for GHL with the specified size.
+    Convert the source image file to an iOS IMG file with the specified size.
     """
+    # Get original image width and height if not specified
+    if width == None or height == None:
+        width, height = Image.open(source).size
+
     # Resize and convert the original image
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.pvr" -r ' + str(width) + ',' + str(height) + ' -f PVRTC1_4')
 
@@ -93,15 +103,19 @@ def create_ios_img(source, dest, width, height):
     del blob[67:91]
     blob[48:52] = (15).to_bytes(4, byteorder='little')
     
-    # Add iOS GHL 20 bytes header
+    # Add iOS IMG 20 bytes header
     blob = __img_header(bytearray.fromhex('00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 01 00 00 06'), width, height) + blob
 
     __write(dest, blob)
 
-def create_360_img(source, dest, width, height, format='BC1'):
+def create_360_img(source, dest, width=None, height=None, format='BC1'):
     """
-    Convert the source image file to a Xbox 360 IMG file for GHL with the specified size.
+    Convert the source image file to a Xbox 360 IMG file with the specified size.
     """
+    # Get original image width and height if not specified
+    if width == None or height == None:
+        width, height = Image.open(source).size
+
     # Resize and convert the original image
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format)
 
@@ -112,15 +126,19 @@ def create_360_img(source, dest, width, height, format='BC1'):
     for i in range(128, len(blob), 2):
         blob[i], blob[i + 1] = blob[i + 1], blob[i]
 
-    # Replace default 128 bytes header with 360 GHL 20 bytes header
+    # Replace default 128 bytes header with 360 IMG 20 bytes header
     blob[0:128] = __img_header(bytearray.fromhex('00 00 00 00 00 01 00 00 00 00 00 05 00 00 01 00 00 00 03 00'), width, height, format)
 
     __write(dest, blob)
 
-def create_wiiu_img(source, dest, width, height):
+def create_wiiu_img(source, dest, width=None, height=None):
     """
-    Convert the source image file to a Wii U IMG file for GHL with the specified size.
+    Convert the source image file to a Wii U IMG file with the specified size.
     """
+    # Get original image width and height if not specified
+    if width == None or height == None:
+        width, height = Image.open(source).size
+
     # Resize and convert the original image to a temporary DDS texture
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.temp.dds" -r ' + str(width) + ',' + str(height) + ' -f BC1')
 
@@ -137,7 +155,7 @@ def create_wiiu_img(source, dest, width, height):
     # Remove 32 bytes end of file block header
     blob = blob[:-32]
 
-    # Replace default 32 bytes header with Wii U GHL 20 bytes header
+    # Replace default 32 bytes header with Wii U IMG 20 bytes header
     blob[0:32] = __img_header(bytearray.fromhex('00 00 00 00 00 01 00 00 00 00 00 05 00 00 01 00 00 00 03 04'), width, height)
 
     __write(dest, blob)
@@ -148,7 +166,7 @@ def __extract_ps3_img(source, dest, width, height, format):
     """
     blob = __read(source)
 
-    # Replace PS3 GHL 20 bytes header with DDS header
+    # Replace PS3 IMG 20 bytes header with DDS header
     blob[0:20] = __dds_header(width, height, format)
 
     # Create temporary DDS file
@@ -164,7 +182,7 @@ def __extract_ios_img(source, dest):
     """
     blob = __read(source)
 
-    # Remove iOS GHL 20 bytes header
+    # Remove iOS IMG 20 bytes header
     del blob[0:20]
 
     # Create temporary PVR file
@@ -180,7 +198,7 @@ def __extract_360_img(source, dest, width, height, format):
     """
     blob = __read(source)
 
-    # Replace 360 GHL 20 bytes header with DDS header
+    # Replace 360 IMG 20 bytes header with DDS header
     blob[0:20] = __dds_header(width, height, format)
 
     # Swap bytes
@@ -200,7 +218,7 @@ def __extract_wiiu_img(source, dest):
     """
     blob = __read(source)
 
-    # Replace Wii U GHL 10 bytes header with GTX header and GX2 Surface block header
+    # Replace Wii U IMG 20 bytes header with GTX header and GX2 Surface block header
     blob[0:20] = bytes.fromhex('47 66 78 32 00 00 00 20 00 00 00 07 00 00 00 01 00 00 00 02 00 00 00 01 00 00 00 00 00 00 00 00 42 4C 4B 7B 00 00 00 20 00 00 00 01 00 00 00 00 00 00 00 0B 00 00 00 9C 00 00 00 00 00 00 00 00')
 
     # Add swizzled image data block header and adjust data length
@@ -234,32 +252,38 @@ def extract_img(source, dest):
     else:
         raise ValueError('Platform not supported')
 
-# Command line usage
 if __name__ == "__main__":
-    import argparse
+    import sys
 
-    parser = argparse.ArgumentParser(description='A python script to extract and convert to IMG files used in Guitar Hero Live.')
-    parser.add_argument('--extract', action='store_true', default=False, help='Extract a IMG file to a decompressed format')
-    parser.add_argument('--platform', choices=['ps3', 'ios', '360', 'wiiu'], help='Platform of the output IMG')
-    parser.add_argument('--input', required=True, help='Path of the input image or a IMG when extracting')
-    parser.add_argument('--output', required=True, help='Path to the output IMG or a decompressed format when extracting')
-    parser.add_argument('--width', type=int, help='Width of the output IMG')
-    parser.add_argument('--height', type=int, help='Height of the output IMG')
-    parser.add_argument('--format', choices=['BC1', 'BC3'], default='BC1', help='DDS format of the output IMG, used in some PS3 and 360 textures. BC1 (DXT1) is the default option')
-
-    args = parser.parse_args()
-
-    if (args.extract):
-        extract_img(args.input, args.output)
-    elif args.platform != None and args.width != None and args.height != None:
-        if args.platform == 'ps3':
-            create_ps3_img(args.input, args.output, args.width, args.height, args.format)
-        elif args.platform == 'ios':
-            create_ios_img(args.input, args.output, args.width, args.height)
-        elif args.platform == '360':
-            create_360_img(args.input, args.output, args.width, args.height, args.format)
-        elif args.platform == 'wiiu':
-            create_wiiu_img(args.input, args.output, args.width, args.height)
+    # Drag and drop extraction
+    if len(sys.argv) == 2 and sys.argv[1].lower().endswith('.img'):
+        extract_img(sys.argv[1], sys.argv[1].replace(sys.argv[1][-4:], '.png'))
+    # Command line usage
     else:
-        parser.print_help()
-        print('You must specify a platform, a width and a height for the output IMG')
+        import argparse
+
+        parser = argparse.ArgumentParser(description='A python script to extract and convert to IMG files used in some FSG games like Guitar Hero Live and DJ Hero 2.')
+        parser.add_argument('--extract', action='store_true', default=False, help='Extract a IMG file to a decompressed format')
+        parser.add_argument('--platform', choices=['ps3', 'ios', '360', 'wiiu'], help='Platform of the output IMG')
+        parser.add_argument('--input', required=True, help='Path of the input image or a IMG file when extracting')
+        parser.add_argument('--output', help='Path to the output IMG or a decompressed format when extracting')
+        parser.add_argument('--width', type=int, help='Width of the output IMG')
+        parser.add_argument('--height', type=int, help='Height of the output IMG')
+        parser.add_argument('--format', choices=['BC1', 'BC3'], default='BC1', help='DDS format of the output IMG, used in some PS3 and 360 textures. BC1 (DXT1) is the default option')
+
+        args = parser.parse_args()
+
+        if (args.extract):
+            extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'))
+        elif args.platform != None:
+            if args.platform == 'ps3':
+                create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.format)
+            elif args.platform == 'ios':
+                create_ios_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
+            elif args.platform == '360':
+                create_360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.format)
+            elif args.platform == 'wiiu':
+                create_wiiu_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
+        else:
+            parser.print_help()
+            print('You must specify a platform to convert to')
