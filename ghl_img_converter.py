@@ -3,6 +3,7 @@ import os
 import subprocess
 
 from PIL import Image
+from ddsformat import DDSFormat
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -14,13 +15,6 @@ platform = {
     'ps3': 1,
     'wiiu': 4,
     'ios': 6
-}
-
-# DDS formats, their associated bytes from the IMG header and their magic number
-# This is used in some PS3 and 360 textures
-dds = {
-    'BC1': (bytes.fromhex('00 05 00 00'), bytes.fromhex('44 58 54 31')), # DXT1
-    'BC3': (bytes.fromhex('00 09 00 FF'), bytes.fromhex('44 58 54 35'))  # DXT5
 }
 
 def __read(filename):
@@ -51,22 +45,11 @@ def __img_header(header, width, height, format=None):
     header[2:4] = height.to_bytes(2, byteorder='little' if header[19] == platform['ios'] else 'big')
 
     if format != None:
-        header[10:14] = dds[format][0]
+        header[10:14] = format.img
 
     return header
 
-def __dds_header(width, height, format):
-    """
-    Return a DDS header with the specified width, height and format values.
-    """
-    header = bytearray.fromhex('44 44 53 20 7C 00 00 00 07 10 08 00 00 00 00 00 00 00 00 00 00 00 00 00 01 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 20 00 00 00 04 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 10 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00')
-    header[12:16] = height.to_bytes(4, byteorder='little')
-    header[16:20] = width.to_bytes(4, byteorder='little')
-    header[20:24] = (height * width // (2 if format == 'BC1' else 1)).to_bytes(4, byteorder='little')
-    header[84:88] = dds[format][1]
-    return header
-
-def create_ps3_img(source, dest, width=None, height=None, format='BC1'):
+def create_ps3_img(source, dest, width=None, height=None, format=DDSFormat.BC1):
     """
     Convert the source image file to a PlayStation 3 IMG file with the specified size and optional format.
     """
@@ -75,7 +58,7 @@ def create_ps3_img(source, dest, width=None, height=None, format='BC1'):
         width, height = Image.open(source).size
 
     # Resize and convert the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format)
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format.name)
 
     blob = __read(dest + '.dds')
     os.remove(dest + '.dds')
@@ -108,7 +91,7 @@ def create_ios_img(source, dest, width=None, height=None):
 
     __write(dest, blob)
 
-def create_360_img(source, dest, width=None, height=None, format='BC1'):
+def create_360_img(source, dest, width=None, height=None, format=DDSFormat.BC1):
     """
     Convert the source image file to a Xbox 360 IMG file with the specified size.
     """
@@ -117,7 +100,7 @@ def create_360_img(source, dest, width=None, height=None, format='BC1'):
         width, height = Image.open(source).size
 
     # Resize and convert the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format)
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format.name)
 
     blob = __read(dest + '.dds')
     os.remove(dest + '.dds')
@@ -167,13 +150,13 @@ def __extract_ps3_img(source, dest, width, height, format):
     blob = __read(source)
 
     # Replace PS3 IMG 20 bytes header with DDS header
-    blob[0:20] = __dds_header(width, height, format)
+    blob[0:20] = format.get_header(width, height)
 
     # Create temporary DDS file
     __write(source + '.dds', blob)
 
     # Convert DDS to decompressed format
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + format)
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + format.name)
     os.remove(source + '.dds')
 
 def __extract_ios_img(source, dest):
@@ -199,7 +182,7 @@ def __extract_360_img(source, dest, width, height, format):
     blob = __read(source)
 
     # Replace 360 IMG 20 bytes header with DDS header
-    blob[0:20] = __dds_header(width, height, format)
+    blob[0:20] = format.get_header(width, height)
 
     # Swap bytes
     for i in range(128, len(blob), 2):
@@ -209,7 +192,7 @@ def __extract_360_img(source, dest, width, height, format):
     __write(source + '.dds', blob)
 
     # Convert DDS to decompressed format
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + format)
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + format.name)
     os.remove(source + '.dds')
 
 def __extract_wiiu_img(source, dest):
@@ -243,9 +226,9 @@ def extract_img(source, dest, plat=None):
     # Identify the platform of the IMG
     if plat == None:
         if header[19] == platform['360']:
-            __extract_360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), 'BC1' if header[10:14] == dds['BC1'][0] else 'BC3')
+            __extract_360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
         elif header[19] == platform['ps3']:
-            __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), 'BC1' if header[10:14] == dds['BC1'][0] else 'BC3')
+            __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
         elif header[19] == platform['wiiu']:
             __extract_wiiu_img(source, dest)
         elif header[19] == platform['ios']:
@@ -253,9 +236,9 @@ def extract_img(source, dest, plat=None):
         else:
             raise ValueError('Platform not supported')
     elif plat == '360':
-        __extract_360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), 'BC1' if header[10:14] == dds['BC1'][0] else 'BC3')
+        __extract_360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
     elif plat == 'ps3':
-        __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), 'BC1' if header[10:14] == dds['BC1'][0] else 'BC3')
+        __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
     elif plat == 'wiiu':
         __extract_wiiu_img(source, dest)
     elif plat == 'ios':
@@ -285,11 +268,11 @@ if __name__ == "__main__":
         if (args.extract):
             extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'), args.platform)
         elif args.platform == 'ps3':
-            create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.format)
+            create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format))
         elif args.platform == 'ios':
             create_ios_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
         elif args.platform == '360':
-            create_360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.format)
+            create_360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format))
         elif args.platform == 'wiiu':
             create_wiiu_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
         else:
