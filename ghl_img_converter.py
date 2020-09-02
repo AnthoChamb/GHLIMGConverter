@@ -257,8 +257,8 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser(description='A python script to extract and convert to IMG files used in some FSG games like Guitar Hero Live and DJ Hero 2.')
         parser.add_argument('--extract', action='store_true', default=False, help='Extract a IMG file to a decompressed format')
         parser.add_argument('--platform', choices=['ps3', 'ios', '360', 'wiiu'], help='Platform of the IMG')
-        parser.add_argument('--input', required=True, help='Path of the input image or a IMG file when extracting')
-        parser.add_argument('--output', help='Path to the output IMG or a decompressed format when extracting')
+        parser.add_argument('--input', required=True, help='Path of the input image, IMG file or root folder')
+        parser.add_argument('--output', help='Path to the output IMG, decompressed format or output folder')
         parser.add_argument('--width', type=int, help='Width of the output IMG')
         parser.add_argument('--height', type=int, help='Height of the output IMG')
         parser.add_argument('--format', choices=['BC1', 'BC3'], default='BC1', help='DDS format of the output IMG, used in some PS3 and 360 textures. BC1 (DXT1) is the default option')
@@ -266,7 +266,20 @@ if __name__ == "__main__":
         args = parser.parse_args()
 
         if (args.extract):
-            extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'), args.platform)
+            if os.path.isdir(args.input):
+                for subdir, dirs, files in os.walk(args.input):
+                    out_folder = os.path.join(args.output, os.path.relpath(subdir, args.input)) if args.output != None else os.path.join('output', os.path.relpath(subdir, args.input))
+                    if not os.path.exists(out_folder):
+                        os.mkdir(out_folder)
+
+                    for f in files:
+                        if f.lower().endswith('.img'):
+                            try:
+                                extract_img(os.path.join(subdir, f), os.path.join(out_folder, f.replace(f[-4:], '.png')), args.platform)
+                            except ValueError:
+                                print('Error with file : ' + os.path.join(subdir, f))
+            else:
+                extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'), args.platform)
         elif args.platform == 'ps3':
             create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format))
         elif args.platform == 'ios':

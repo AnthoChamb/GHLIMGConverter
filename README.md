@@ -1,14 +1,18 @@
 # GHL IMG Converter
-A python script and module to extract and convert to IMG files used in some FSG games like Guitar Hero Live and DJ Hero 2
+A python script and module to extract and convert to IMG files used in some FSG games like Guitar Hero Live, DJ Hero and DJ Hero 2
 
 ## Arguments
 `--extract` to extract a IMG file to a decompressed format
 
 `--platform` to specify the platform of the IMG
 
-`--input` to specify the path of the input image or IMG file when extracting
+`--input` to specify the path of the input
+- original image when converting,
+- IMG file or root folder to extract
 
-`--output` to specify the path of the output IMG or decompressed format when extracting
+`--output` to specify the path of the output
+- IMG file when converting,
+- decompressed format or output folder to extract to
 
 `--width` to specify the width of the output IMG
 
