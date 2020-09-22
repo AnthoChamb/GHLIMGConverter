@@ -272,7 +272,7 @@ if __name__ == "__main__":
         sp_convert.add_argument('input', help='Path of the input image to convert')
         sp_convert.add_argument('--output', help='Path to the output IMG')
         sp_convert.add_argument('--platform', choices=['ps3', 'ios', 'x360', 'wiiu'], required=True, help='Platform to convert the IMG to')
-        sp_convert.add_argument('--game', choices=['ghl', 'djh2'], default='ghl', help='Game to convert the IMG to, used in PS3 and X360 textures. Default option is ghl')
+        sp_convert.add_argument('--game', choices=['ghl', 'djh', 'djh2'], default='ghl', help='Game to convert the IMG to, used in PS3 and X360 textures. Default option is ghl')
         sp_convert.add_argument('--width', type=int, help='Width of the output IMG')
         sp_convert.add_argument('--height', type=int, help='Height of the output IMG')
         sp_convert.add_argument('--format', choices=['BC1', 'BC3'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')

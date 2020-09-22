@@ -6,7 +6,7 @@ A python script and module to extract and convert to IMG files used in some FSG 
 **Extract** a IMG file to a decompressed format
 
 ```
-ghl_img_converter.py extract input [--output OUTPUT]`
+ghl_img_converter.py extract input [--output OUTPUT]
 ```
 
 #### Arguments
@@ -18,7 +18,7 @@ ghl_img_converter.py extract input [--output OUTPUT]`
 **Convert** an image to a IMG file
 
 ```
-ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wiiu} [--game {ghl,djh2}] [--width WIDTH] [--height HEIGHT] [--format {BC1,BC3}]
+ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wiiu} [--game {ghl,djh,djh2}] [--width WIDTH] [--height HEIGHT] [--format {BC1,BC3}]
 ```
 
 #### Arguments
@@ -28,7 +28,7 @@ ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wi
 
 `--platform {ps3,ios,x360,wiiu}` Platform to convert the IMG to
 
-`--game {ghl,djh2}` Game to convert the IMG to, used in PS3 and X360 textures. Default option is `ghl`
+`--game {ghl,djh,djh2}` Game to convert the IMG to, used in PS3 and X360 textures. Default option is `ghl`
 
 `--width WIDTH` Width of the output IMG
 
