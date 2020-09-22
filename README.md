@@ -6,13 +6,15 @@ A python script and module to extract and convert to IMG files used in some FSG 
 **Extract** a IMG file to a decompressed format
 
 ```
-ghl_img_converter.py extract input [--output OUTPUT]
+ghl_img_converter.py extract input [--output OUTPUT] [--platform {ps3,ios,x360,wiiu}]
 ```
 
 #### Arguments
 `input` Path of the input IMG file or root folder to extract
 
 `--output OUTPUT` Path to the output decompressed format or output folder
+
+`--platform {ps3,ios,x360,wiiu}` Force extraction from the specified platform
 
 ### Conversion
 **Convert** an image to a IMG file

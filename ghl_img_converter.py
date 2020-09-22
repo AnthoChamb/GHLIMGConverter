@@ -193,7 +193,7 @@ def __extract_wiiu_img(source, dest):
     subprocess.call(config['path']['gtx_extract'] + ' -o "' + dest + '" "' + source + '.gtx"', shell=True)
     os.remove(source + '.gtx')
 
-def extract_img(source, dest):
+def extract_img(source, dest, platform=None):
     """
     Extract the source IMG file to a decompressed format
     """
@@ -202,7 +202,8 @@ def extract_img(source, dest):
     img.close()
 
     # Identify the platform of the IMG
-    platform = IMGFormat.from_img(header).platform
+    if platform == None:
+        platform = IMGFormat.from_img(header).platform
 
     if platform == Platform.X360:
         __extract_x360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
@@ -229,12 +230,12 @@ def __extract_args(args):
             for f in files:
                 if f.lower().endswith('.img'):
                     try:
-                        extract_img(os.path.join(subdir, f), os.path.join(out_folder, f.replace(f[-4:], '.png')))
+                        extract_img(os.path.join(subdir, f), os.path.join(out_folder, f.replace(f[-4:], '.png')), None if args.platform == None else Platform.from_string(args.platform))
                     except ValueError:
                         print('Error with file : ' + os.path.join(subdir, f))
     # Single extract
     else:
-        extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'))
+        extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'), None if args.platform == None else Platform.from_string(args.platform))
 
 def __convert_args(args):
     """
@@ -266,6 +267,7 @@ if __name__ == "__main__":
         sp_extract.set_defaults(func=__extract_args)
         sp_extract.add_argument('input', help='Path of the input IMG file or root folder to extract')
         sp_extract.add_argument('--output', help='Path to the output decompressed format or output folder')
+        sp_extract.add_argument('--platform', choices=['ps3', 'ios', 'x360', 'wiiu'], help='Force extraction from the specified platform')
 
         sp_convert = sp.add_parser('convert', help='Convert an image to a IMG file')
         sp_convert.set_defaults(func=__convert_args)
