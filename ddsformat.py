@@ -1,15 +1,31 @@
 from enum import Enum
 
-class DDSFormat(Enum):
+class TextureFormat(Enum):
+    """
+    Enum of the supported texture formats
+    """
+    GTX = (bytes([0x00, 0x05, 0x00, 0x00]))
+    PVR = (bytes([0x00, 0x00, 0x00, 0x00]))
+
+    def __init__(self, img):
+        self.img = img
+
+class DDSFormat(TextureFormat, Enum):
+    """
+    Enum of the supported DDS texture formats
+    """
     BC1 = (bytes([0x00, 0x05, 0x00, 0x00]), bytes([0x44, 0x58, 0x54, 0x31]), 8) # DXT1
     BC3 = (bytes([0x00, 0x09, 0x00, 0xFF]), bytes([0x44, 0x58, 0x54, 0x35]), 16) # DXT5
 
     def __init__(self, img, magic, size):
-        self.img = img
+        TextureFormat.__init__(self, img)
         self.magic = magic
         self.size = size # Bytes to store a block of 4x4 pixels
 
     def get_header(self, width, height):
+        """
+        Return a DDS header with the specified width and height values
+        """
         if width % 4 != 0 or height % 4 != 0:
             raise ValueError('Invalid size. Width and height must be a multiple of 4')
 
@@ -33,6 +49,9 @@ class DDSFormat(Enum):
 
     @staticmethod
     def from_string(value):
+        """
+        Return the DDS format associated with its name as defined in the command line options
+        """
         for format in DDSFormat:
             if value == format.name:
                 return format
@@ -40,6 +59,9 @@ class DDSFormat(Enum):
 
     @staticmethod
     def from_img(value):
+        """
+        Return the DDS format associated with its IMG header value
+        """
         for format in DDSFormat:
             if value[10:14] == format.img:
                 return format

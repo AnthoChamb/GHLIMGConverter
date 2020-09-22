@@ -4,18 +4,10 @@ import subprocess
 
 from PIL import Image
 from ddsformat import DDSFormat
+from imgformat import IMGFormat, Platform, Game
 
 config = configparser.ConfigParser()
 config.read('config.ini')
-
-# Byte value associated with each platform
-# It is the last byte of the IMG header
-platform = {
-    '360': 0,
-    'ps3': 1,
-    'wiiu': 4,
-    'ios': 6
-}
 
 def __read(filename):
     """
@@ -35,23 +27,9 @@ def __write(dest, blob):
     file.write(blob)
     file.close()
 
-def __img_header(header, width, height, format=None):
+def create_ps3_img(source, dest, width=None, height=None, format=DDSFormat.BC1, game=Game.GHL):
     """
-    Return the IMG header with the specified width, height and optional format values.
-    Values are in big endian order for PS3, 360 and Wii U.
-    Values are in little endian order for iOS.
-    """
-    header[0:2] = header[6:8] = width.to_bytes(2, byteorder='little' if header[19] == platform['ios'] else 'big')
-    header[2:4] = height.to_bytes(2, byteorder='little' if header[19] == platform['ios'] else 'big')
-
-    if format != None:
-        header[10:14] = format.img
-
-    return header
-
-def create_ps3_img(source, dest, width=None, height=None, format=DDSFormat.BC1):
-    """
-    Convert the source image file to a PlayStation 3 IMG file with the specified size and optional format.
+    Convert the source image file to a PlayStation 3 IMG file with the specified size, format and game.
     """
     # Get original image width and height if not specified
     if width == None or height == None:
@@ -63,14 +41,14 @@ def create_ps3_img(source, dest, width=None, height=None, format=DDSFormat.BC1):
     blob = __read(dest + '.dds')
     os.remove(dest + '.dds')
 
-    # Replace default 128 bytes header with PS3 IMG 20 bytes header
-    blob[0:128] = __img_header(bytearray.fromhex('00 00 00 00 00 01 00 00 00 00 00 05 00 00 01 00 00 00 03 01'), width, height, format)
+    # Replace default 128 bytes header with PS3 IMG 20 bytes header from the specified game
+    blob[0:128] = IMGFormat.from_enums(Platform.PS3, game).get_header(width, height, format)
 
     __write(dest, blob)
 
 def create_ios_img(source, dest, width=None, height=None):
     """
-    Convert the source image file to an iOS IMG file with the specified size.
+    Convert the source image file to a GHL iOS IMG file with the specified size.
     """
     # Get original image width and height if not specified
     if width == None or height == None:
@@ -86,14 +64,14 @@ def create_ios_img(source, dest, width=None, height=None):
     del blob[67:91]
     blob[48:52] = (15).to_bytes(4, byteorder='little')
     
-    # Add iOS IMG 20 bytes header
-    blob = __img_header(bytearray.fromhex('00 00 00 00 01 00 00 00 00 00 00 00 00 00 00 00 01 00 00 06'), width, height) + blob
+    # Add GHL iOS IMG 20 bytes header
+    blob = IMGFormat.GHLIOS.get_header(width, height, Platform.IOS.format) + blob
 
     __write(dest, blob)
 
-def create_360_img(source, dest, width=None, height=None, format=DDSFormat.BC1):
+def create_x360_img(source, dest, width=None, height=None, format=DDSFormat.BC1, game=Game.GHL):
     """
-    Convert the source image file to a Xbox 360 IMG file with the specified size.
+    Convert the source image file to a Xbox 360 IMG file with the specified size, format and game.
     """
     # Get original image width and height if not specified
     if width == None or height == None:
@@ -109,14 +87,14 @@ def create_360_img(source, dest, width=None, height=None, format=DDSFormat.BC1):
     for i in range(128, len(blob), 2):
         blob[i], blob[i + 1] = blob[i + 1], blob[i]
 
-    # Replace default 128 bytes header with 360 IMG 20 bytes header
-    blob[0:128] = __img_header(bytearray.fromhex('00 00 00 00 00 01 00 00 00 00 00 05 00 00 01 00 00 00 03 00'), width, height, format)
+    # Replace default 128 bytes header with X360 IMG 20 bytes header from the specified game
+    blob[0:128] = IMGFormat.from_enums(Platform.X360, game).get_header(width, height, format)
 
     __write(dest, blob)
 
 def create_wiiu_img(source, dest, width=None, height=None):
     """
-    Convert the source image file to a Wii U IMG file with the specified size.
+    Convert the source image file to a GHL Wii U IMG file with the specified size.
     """
     # Get original image width and height if not specified
     if width == None or height == None:
@@ -138,8 +116,8 @@ def create_wiiu_img(source, dest, width=None, height=None):
     # Remove 32 bytes end of file block header
     blob = blob[:-32]
 
-    # Replace default 32 bytes header with Wii U IMG 20 bytes header
-    blob[0:32] = __img_header(bytearray.fromhex('00 00 00 00 00 01 00 00 00 00 00 05 00 00 01 00 00 00 03 04'), width, height)
+    # Replace default 32 bytes header with GHL Wii U IMG 20 bytes header
+    blob[0:32] = IMGFormat.GHLWIIU.get_header(width, height, Platform.WIIU.format)
 
     __write(dest, blob)
 
@@ -175,13 +153,13 @@ def __extract_ios_img(source, dest):
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.pvr" -o "' + source + '.pvr" -d "' + dest + '" -f PVRTC1_4_RGB')
     os.remove(source + '.pvr')
 
-def __extract_360_img(source, dest, width, height, format):
+def __extract_x360_img(source, dest, width, height, format):
     """
     Extract the source Xbox 360 IMG file with the specified width, height and format to a decompressed format
     """
     blob = __read(source)
 
-    # Replace 360 IMG 20 bytes header with DDS header
+    # Replace X360 IMG 20 bytes header with DDS header
     blob[0:20] = format.get_header(width, height)
 
     # Swap bytes
@@ -215,7 +193,7 @@ def __extract_wiiu_img(source, dest):
     subprocess.call(config['path']['gtx_extract'] + ' -o "' + dest + '" "' + source + '.gtx"', shell=True)
     os.remove(source + '.gtx')
 
-def extract_img(source, dest, plat=None):
+def extract_img(source, dest):
     """
     Extract the source IMG file to a decompressed format
     """
@@ -224,25 +202,52 @@ def extract_img(source, dest, plat=None):
     img.close()
 
     # Identify the platform of the IMG
-    if plat == None:
-        if header[19] == platform['360']:
-            __extract_360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
-        elif header[19] == platform['ps3']:
-            __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
-        elif header[19] == platform['wiiu']:
-            __extract_wiiu_img(source, dest)
-        elif header[19] == platform['ios']:
-            __extract_ios_img(source, dest)
-        else:
-            raise ValueError('Platform not supported')
-    elif plat == '360':
-        __extract_360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
-    elif plat == 'ps3':
+    platform = IMGFormat.from_img(header).platform
+
+    if platform == Platform.X360:
+        __extract_x360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
+    elif platform == Platform.PS3:
         __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
-    elif plat == 'wiiu':
+    elif platform == Platform.WIIU:
         __extract_wiiu_img(source, dest)
-    elif plat == 'ios':
+    elif platform == Platform.IOS:
         __extract_ios_img(source, dest)
+    else:
+        raise ValueError('Platform not supported')
+
+def __extract_args(args):
+    """
+    Extract using command line arguments
+    """
+    # Batch extract
+    if os.path.isdir(args.input):
+        for subdir, dirs, files in os.walk(args.input):
+            out_folder = os.path.join(args.output, os.path.relpath(subdir, args.input)) if args.output != None else os.path.join('output', os.path.relpath(subdir, args.input))
+            if not os.path.exists(out_folder):
+                os.mkdir(out_folder)
+
+            for f in files:
+                if f.lower().endswith('.img'):
+                    try:
+                        extract_img(os.path.join(subdir, f), os.path.join(out_folder, f.replace(f[-4:], '.png')))
+                    except ValueError:
+                        print('Error with file : ' + os.path.join(subdir, f))
+    # Single extract
+    else:
+        extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'))
+
+def __convert_args(args):
+    """
+    Convert using the commannd line arguments
+    """
+    if args.platform == 'ps3':
+        create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game))
+    elif args.platform == 'ios':
+        create_ios_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
+    elif args.platform == 'x360':
+        create_x360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game))
+    elif args.platform == 'wiiu':
+        create_wiiu_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
 
 if __name__ == "__main__":
     import sys
@@ -255,39 +260,22 @@ if __name__ == "__main__":
         import argparse
 
         parser = argparse.ArgumentParser(description='A python script to extract and convert to IMG files used in some FSG games like Guitar Hero Live and DJ Hero 2.')
-        parser.add_argument('--extract', action='store_true', default=False, help='Extract a IMG file to a decompressed format')
-        parser.add_argument('--platform', choices=['ps3', 'ios', '360', 'wiiu'], help='Platform of the IMG')
-        parser.add_argument('--input', required=True, help='Path of the input image, IMG file or root folder')
-        parser.add_argument('--output', help='Path to the output IMG, decompressed format or output folder')
-        parser.add_argument('--width', type=int, help='Width of the output IMG')
-        parser.add_argument('--height', type=int, help='Height of the output IMG')
-        parser.add_argument('--format', choices=['BC1', 'BC3'], default='BC1', help='DDS format of the output IMG, used in some PS3 and 360 textures. BC1 (DXT1) is the default option')
+        sp = parser.add_subparsers(help='You must choose one of the following commands')
+        
+        sp_extract = sp.add_parser('extract', help='Extract a IMG file to a decompressed format')
+        sp_extract.set_defaults(func=__extract_args)
+        sp_extract.add_argument('input', help='Path of the input IMG file or root folder to extract')
+        sp_extract.add_argument('--output', help='Path to the output decompressed format or output folder')
+
+        sp_convert = sp.add_parser('convert', help='Convert an image to a IMG file')
+        sp_convert.set_defaults(func=__convert_args)
+        sp_convert.add_argument('input', help='Path of the input image to convert')
+        sp_convert.add_argument('--output', help='Path to the output IMG')
+        sp_convert.add_argument('--platform', choices=['ps3', 'ios', 'x360', 'wiiu'], required=True, help='Platform to convert the IMG to')
+        sp_convert.add_argument('--game', choices=['ghl', 'djh2'], default='ghl', help='Game to convert the IMG to, used in PS3 and X360 textures. Default option is ghl')
+        sp_convert.add_argument('--width', type=int, help='Width of the output IMG')
+        sp_convert.add_argument('--height', type=int, help='Height of the output IMG')
+        sp_convert.add_argument('--format', choices=['BC1', 'BC3'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
 
         args = parser.parse_args()
-
-        if (args.extract):
-            if os.path.isdir(args.input):
-                for subdir, dirs, files in os.walk(args.input):
-                    out_folder = os.path.join(args.output, os.path.relpath(subdir, args.input)) if args.output != None else os.path.join('output', os.path.relpath(subdir, args.input))
-                    if not os.path.exists(out_folder):
-                        os.mkdir(out_folder)
-
-                    for f in files:
-                        if f.lower().endswith('.img'):
-                            try:
-                                extract_img(os.path.join(subdir, f), os.path.join(out_folder, f.replace(f[-4:], '.png')), args.platform)
-                            except ValueError:
-                                print('Error with file : ' + os.path.join(subdir, f))
-            else:
-                extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'), args.platform)
-        elif args.platform == 'ps3':
-            create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format))
-        elif args.platform == 'ios':
-            create_ios_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
-        elif args.platform == '360':
-            create_360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format))
-        elif args.platform == 'wiiu':
-            create_wiiu_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
-        else:
-            parser.print_help()
-            print('You must specify a platform to convert to')
+        args.func(args)

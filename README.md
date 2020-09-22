@@ -1,24 +1,40 @@
 # GHL IMG Converter
-A python script and module to extract and convert to IMG files used in some FSG games like Guitar Hero Live, DJ Hero and DJ Hero 2
+A python script and module to extract and convert to IMG files used in some FSG games like Guitar Hero Live and DJ Hero 2
 
-## Arguments
-`--extract` to extract a IMG file to a decompressed format
+## Usage
+### Extraction
+**Extract** a IMG file to a decompressed format
 
-`--platform` to specify the platform of the IMG
+```
+ghl_img_converter.py extract input [--output OUTPUT]`
+```
 
-`--input` to specify the path of the input
-- original image when converting,
-- IMG file or root folder to extract
+#### Arguments
+`input` Path of the input IMG file or root folder to extract
 
-`--output` to specify the path of the output
-- IMG file when converting,
-- decompressed format or output folder to extract to
+`--output OUTPUT` Path to the output decompressed format or output folder
 
-`--width` to specify the width of the output IMG
+### Conversion
+**Convert** an image to a IMG file
 
-`--height` to specify the height of the output IMG
+```
+ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wiiu} [--game {ghl,djh2}] [--width WIDTH] [--height HEIGHT] [--format {BC1,BC3}]
+```
 
-`--format` to specify the DDS format of the output IMG, used in some PS3 and 360 textures
+#### Arguments
+`input` Path of the input image to convert
+
+`--output OUTPUT` Path to the output IMG
+
+`--platform {ps3,ios,x360,wiiu}` Platform to convert the IMG to
+
+`--game {ghl,djh2}` Game to convert the IMG to, used in PS3 and X360 textures. Default option is `ghl`
+
+`--width WIDTH` Width of the output IMG
+
+`--height HEIGHT` Height of the output IMG
+
+`--format {BC1,BC3}` DDS format of the output IMG, used in PS3 and X360 textures. Default option is `BC1`
 
 ## Requirements
 This program currently requires [PVRTexToolCLI.exe](https://www.imgtec.com/developers/powervr-sdk-tools/pvrtextool/) installed and added to your `config.ini` file
