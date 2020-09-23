@@ -27,35 +27,35 @@ def __write(dest, blob):
     file.write(blob)
     file.close()
 
-def create_ps3_img(source, dest, width=None, height=None, format=DDSFormat.BC1, game=Game.GHL):
+def create_ps3_img(source, dest, width=None, height=None, format=DDSFormat.BC1, game=Game.GHL, mipmap=1):
     """
-    Convert the source image file to a PlayStation 3 IMG file with the specified size, format and game.
+    Convert the source image file to a PlayStation 3 IMG file with the specified size, format, game and mipmap count.
     """
     # Get original image width and height if not specified
     if width == None or height == None:
         width, height = Image.open(source).size
 
-    # Resize and convert the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format.name)
+    # Resize, convert and create mipmaps for the original image
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format.name + ' -m ' + str(mipmap))
 
     blob = __read(dest + '.dds')
     os.remove(dest + '.dds')
 
     # Replace default 128 bytes header with PS3 IMG 20 bytes header from the specified game
-    blob[0:128] = IMGFormat.from_enums(Platform.PS3, game).get_header(width, height, format)
+    blob[0:128] = IMGFormat.from_enums(Platform.PS3, game).get_header(width, height, format, mipmap)
 
     __write(dest, blob)
 
-def create_ios_img(source, dest, width=None, height=None):
+def create_ios_img(source, dest, width=None, height=None, mipmap=1):
     """
-    Convert the source image file to a GHL iOS IMG file with the specified size.
+    Convert the source image file to a GHL iOS IMG file with the specified size and mipmap count.
     """
     # Get original image width and height if not specified
     if width == None or height == None:
         width, height = Image.open(source).size
 
-    # Resize and convert the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.pvr" -r ' + str(width) + ',' + str(height) + ' -f PVRTC1_4')
+    # Resize, convert and create mipmaps for the original image
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.pvr" -r ' + str(width) + ',' + str(height) + ' -f PVRTC1_4 -m ' + str(mipmap))
 
     blob = __read(dest + '.pvr')
     os.remove(dest + '.pvr')
@@ -65,20 +65,20 @@ def create_ios_img(source, dest, width=None, height=None):
     blob[48:52] = (15).to_bytes(4, byteorder='little')
     
     # Add GHL iOS IMG 20 bytes header
-    blob = IMGFormat.GHLIOS.get_header(width, height, Platform.IOS.format) + blob
+    blob = IMGFormat.GHLIOS.get_header(width, height, Platform.IOS.format, mipmap) + blob
 
     __write(dest, blob)
 
-def create_x360_img(source, dest, width=None, height=None, format=DDSFormat.BC1, game=Game.GHL):
+def create_x360_img(source, dest, width=None, height=None, format=DDSFormat.BC1, game=Game.GHL, mipmap=1):
     """
-    Convert the source image file to a Xbox 360 IMG file with the specified size, format and game.
+    Convert the source image file to a Xbox 360 IMG file with the specified size, format, game and mipmap count.
     """
     # Get original image width and height if not specified
     if width == None or height == None:
         width, height = Image.open(source).size
 
-    # Resize and convert the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format.name)
+    # Resize, convert and create mipmaps for the original image
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format.name + ' -m ' + str(mipmap))
 
     blob = __read(dest + '.dds')
     os.remove(dest + '.dds')
@@ -88,20 +88,20 @@ def create_x360_img(source, dest, width=None, height=None, format=DDSFormat.BC1,
         blob[i], blob[i + 1] = blob[i + 1], blob[i]
 
     # Replace default 128 bytes header with X360 IMG 20 bytes header from the specified game
-    blob[0:128] = IMGFormat.from_enums(Platform.X360, game).get_header(width, height, format)
+    blob[0:128] = IMGFormat.from_enums(Platform.X360, game).get_header(width, height, format, mipmap)
 
     __write(dest, blob)
 
-def create_wiiu_img(source, dest, width=None, height=None):
+def create_wiiu_img(source, dest, width=None, height=None, mipmap=1):
     """
-    Convert the source image file to a GHL Wii U IMG file with the specified size.
+    Convert the source image file to a GHL Wii U IMG file with the specified size and mipmap count.
     """
     # Get original image width and height if not specified
     if width == None or height == None:
         width, height = Image.open(source).size
 
-    # Resize and convert the original image to a temporary DDS texture
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.temp.dds" -r ' + str(width) + ',' + str(height) + ' -f BC1')
+    # Resize and create mipmaps for the original image and convert to a temporary DDS texture
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.temp.dds" -r ' + str(width) + ',' + str(height) + ' -f BC1 -m ' + str(mipmap))
 
     # Convert the temporary file to a GTX texture
     subprocess.call('python ' + config['path']['gtx_extract'] + ' -o "' + dest + '.gtx" "' + dest + '.temp.dds"', shell=True)
@@ -117,18 +117,18 @@ def create_wiiu_img(source, dest, width=None, height=None):
     blob = blob[:-32]
 
     # Replace default 32 bytes header with GHL Wii U IMG 20 bytes header
-    blob[0:32] = IMGFormat.GHLWIIU.get_header(width, height, Platform.WIIU.format)
+    blob[0:32] = IMGFormat.GHLWIIU.get_header(width, height, Platform.WIIU.format, mipmap)
 
     __write(dest, blob)
 
-def __extract_ps3_img(source, dest, width, height, format):
+def __extract_ps3_img(source, dest, width, height, format, mipmap):
     """
-    Extract the source PS3 IMG file with the specified width, height and format to a decompressed format
+    Extract the source PS3 IMG file with the specified width, height, format and mipmap count to a decompressed format
     """
     blob = __read(source)
 
     # Replace PS3 IMG 20 bytes header with DDS header
-    blob[0:20] = format.get_header(width, height)
+    blob[0:20] = format.get_header(width, height, mipmap)
 
     # Create temporary DDS file
     __write(source + '.dds', blob)
@@ -153,14 +153,14 @@ def __extract_ios_img(source, dest):
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.pvr" -o "' + source + '.pvr" -d "' + dest + '" -f PVRTC1_4_RGB')
     os.remove(source + '.pvr')
 
-def __extract_x360_img(source, dest, width, height, format):
+def __extract_x360_img(source, dest, width, height, format, mipmap):
     """
-    Extract the source Xbox 360 IMG file with the specified width, height and format to a decompressed format
+    Extract the source Xbox 360 IMG file with the specified width, height, format and mipmap count to a decompressed format
     """
     blob = __read(source)
 
     # Replace X360 IMG 20 bytes header with DDS header
-    blob[0:20] = format.get_header(width, height)
+    blob[0:20] = format.get_header(width, height, mipmap)
 
     # Swap bytes
     for i in range(128, len(blob), 2):
@@ -206,9 +206,9 @@ def extract_img(source, dest, platform=None):
         platform = IMGFormat.from_img(header).platform
 
     if platform == Platform.X360:
-        __extract_x360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
+        __extract_x360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), int.from_bytes(header[16:18], byteorder='big'))
     elif platform == Platform.PS3:
-        __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header))
+        __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), int.from_bytes(header[16:18], byteorder='big'))
     elif platform == Platform.WIIU:
         __extract_wiiu_img(source, dest)
     elif platform == Platform.IOS:
@@ -242,13 +242,13 @@ def __convert_args(args):
     Convert using the commannd line arguments
     """
     if args.platform == 'ps3':
-        create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game))
+        create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game), args.mipmap)
     elif args.platform == 'ios':
-        create_ios_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
+        create_ios_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.mipmap)
     elif args.platform == 'x360':
-        create_x360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game))
+        create_x360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game), args.mipmap)
     elif args.platform == 'wiiu':
-        create_wiiu_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height)
+        create_wiiu_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.mipmap)
 
 if __name__ == "__main__":
     import sys
@@ -260,7 +260,7 @@ if __name__ == "__main__":
     else:
         import argparse
 
-        parser = argparse.ArgumentParser(description='A python script to extract and convert to IMG files used in some FSG games like Guitar Hero Live and DJ Hero 2.')
+        parser = argparse.ArgumentParser(description='A python script to extract and convert to IMG files used in some FSG games like Guitar Hero Live, DJ Hero and DJ Hero 2.')
         sp = parser.add_subparsers(help='You must choose one of the following commands')
         
         sp_extract = sp.add_parser('extract', help='Extract a IMG file to a decompressed format')
@@ -278,6 +278,7 @@ if __name__ == "__main__":
         sp_convert.add_argument('--width', type=int, help='Width of the output IMG')
         sp_convert.add_argument('--height', type=int, help='Height of the output IMG')
         sp_convert.add_argument('--format', choices=['BC1', 'BC3'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
+        sp_convert.add_argument('--mipmap', type=int, default=1, help='Mipmap count of the output IMG. Default option is 1')
 
         args = parser.parse_args()
         args.func(args)

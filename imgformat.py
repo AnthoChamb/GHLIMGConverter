@@ -52,26 +52,31 @@ class IMGFormat(Enum):
     GHLWIIU = (Platform.WIIU, Game.GHL, bytes([0x01, 0x00, 0x00, 0x00, 0x03, 0x04]))
     GHLIOS = (Platform.IOS, Game.GHL, bytes([0x00, 0x00, 0x01 ,0x00, 0x00, 0x06]))
     DJHX360 = (Platform.X360, Game.DJH, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
-    DJHPS3 = (Platform.PS3, Game.DJH, bytes([0x00, 0x01, 0x00, 0x08, 0x00, 0x00]))
+    DJHPS3 = (Platform.PS3, Game.DJH, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
     DJH2X360 = (Platform.X360, Game.DJH2, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
-    DJH2PS3 = (Platform.PS3, Game.DJH2, bytes([0x00, 0x01, 0x00, 0x06, 0x00, 0x00]))
+    DJH2PS3 = (Platform.PS3, Game.DJH2, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
 
     def __init__(self, platform, game, img):
         self.platform = platform
         self.game = game
         self.img = img
 
-    def get_header(self, width, height, format):
+    def get_header(self, width, height, format, mipmap=1):
         """
-        Return a IMG header with specified width, height and texture format values
+        Return a IMG header with specified width, height, mipmap count and texture format values
         """
-        header = width.to_bytes(2, byteorder=self.platform.byteorder)
+        header = bytearray(width.to_bytes(2, byteorder=self.platform.byteorder))
         header += height.to_bytes(2, byteorder=self.platform.byteorder)
         header += (1).to_bytes(2, byteorder=self.platform.byteorder)
         header += width.to_bytes(2, byteorder=self.platform.byteorder)
-        header += (0).to_bytes(2, byteorder=self.platform.byteorder)
+        header += bytes([0x00, 0x00])
         header += format.img
+        header += bytes([0x00, 0x00])
         header += self.img
+
+        if mipmap > 1:
+            header[16:18] = mipmap.to_bytes(2, byteorder=self.platform.byteorder)
+
         return header
 
     @staticmethod
@@ -90,6 +95,6 @@ class IMGFormat(Enum):
         Return the IMGFormat associated with its IMG header values
         """
         for format in IMGFormat:
-            if value[14:20] == format.img:
+            if value[18:20] == format.img[-2:]:
                 return format
         raise ValueError('Unknown IMG format. This platform and/or game may not be supported')
