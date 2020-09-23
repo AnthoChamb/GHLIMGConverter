@@ -20,7 +20,7 @@ ghl_img_converter.py extract input [--output OUTPUT] [--platform {ps3,ios,x360,w
 **Convert** an image to a IMG file
 
 ```
-ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wiiu} [--game {ghl,djh,djh2}] [--width WIDTH] [--height HEIGHT] [--format {BC1,BC3}] [--mipmap MIPMAP]
+ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wiiu} [--game {ghl,djh,djh2}] [--width WIDTH] [--height HEIGHT] [--format {BC1,BC3,R8G8B8A8}] [--mipmap MIPMAP]
 ```
 
 #### Arguments
@@ -36,7 +36,7 @@ ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wi
 
 `--height HEIGHT` Height of the output IMG
 
-`--format {BC1,BC3}` DDS format of the output IMG, used in PS3 and X360 textures. Default option is `BC1`
+`--format {BC1,BC3,R8G8B8A8}` DDS format of the output IMG, used in PS3 and X360 textures. Default option is `BC1`
 
 `--mipmap MIPMAP` Mipmap count of the output IMG. Default option is `1`
 

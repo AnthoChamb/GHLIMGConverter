@@ -75,7 +75,7 @@ class IMGFormat(Enum):
         header += self.img
 
         if mipmap > 1:
-            header[16:18] = mipmap.to_bytes(2, byteorder=self.platform.byteorder)
+            header[16:18] = (mipmap - 0 if self.platform == Platform.IOS else 1).to_bytes(2, byteorder=self.platform.byteorder)
 
         return header
 

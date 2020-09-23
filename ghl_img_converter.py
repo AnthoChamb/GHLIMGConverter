@@ -41,8 +41,13 @@ def create_ps3_img(source, dest, width=None, height=None, format=DDSFormat.BC1, 
     blob = __read(dest + '.dds')
     os.remove(dest + '.dds')
 
-    # Replace default 128 bytes header with PS3 IMG 20 bytes header from the specified game
-    blob[0:128] = IMGFormat.from_enums(Platform.PS3, game).get_header(width, height, format, mipmap)
+    if not format.compressed:
+        # Swap bytes to ABGR
+        for i in range(format.get_header_size(), len(blob), 4):
+            blob[i], blob[i + 1], blob[i + 2], blob[i + 3] = blob[i + 3], blob[i + 2], blob[i + 1], blob[i]
+
+    # Replace default header with PS3 IMG 20 bytes header from the specified game
+    blob[0:format.get_header_size()] = IMGFormat.from_enums(Platform.PS3, game).get_header(width, height, format, mipmap)
 
     __write(dest, blob)
 
@@ -84,11 +89,16 @@ def create_x360_img(source, dest, width=None, height=None, format=DDSFormat.BC1,
     os.remove(dest + '.dds')
 
     # Swap bytes
-    for i in range(128, len(blob), 2):
+    for i in range(format.get_header_size(), len(blob), 2):
         blob[i], blob[i + 1] = blob[i + 1], blob[i]
 
-    # Replace default 128 bytes header with X360 IMG 20 bytes header from the specified game
-    blob[0:128] = IMGFormat.from_enums(Platform.X360, game).get_header(width, height, format, mipmap)
+    if not format.compressed:
+        # Swap bytes to ABGR
+        for i in range(format.get_header_size(), len(blob), 4):
+            blob[i], blob[i + 1], blob[i + 2], blob[i + 3] = blob[i + 3], blob[i + 2], blob[i + 1], blob[i]
+
+    # Replace default header with X360 IMG 20 bytes header from the specified game
+    blob[0:format.get_header_size()] = IMGFormat.from_enums(Platform.X360, game).get_header(width, height, format, mipmap)
 
     __write(dest, blob)
 
@@ -130,6 +140,11 @@ def __extract_ps3_img(source, dest, width, height, format, mipmap):
     # Replace PS3 IMG 20 bytes header with DDS header
     blob[0:20] = format.get_header(width, height, mipmap)
 
+    if not format.compressed:
+        # Swap bytes to RGBA
+        for i in range(format.get_header_size(), len(blob), 4):
+            blob[i], blob[i + 1], blob[i + 2], blob[i + 3] = blob[i + 3], blob[i + 2], blob[i + 1], blob[i]
+
     # Create temporary DDS file
     __write(source + '.dds', blob)
 
@@ -162,8 +177,13 @@ def __extract_x360_img(source, dest, width, height, format, mipmap):
     # Replace X360 IMG 20 bytes header with DDS header
     blob[0:20] = format.get_header(width, height, mipmap)
 
+    if not format.compressed:
+        # Swap bytes to RGBA
+        for i in range(format.get_header_size(), len(blob), 4):
+            blob[i], blob[i + 1], blob[i + 2], blob[i + 3] = blob[i + 3], blob[i + 2], blob[i + 1], blob[i]
+
     # Swap bytes
-    for i in range(128, len(blob), 2):
+    for i in range(format.get_header_size(), len(blob), 2):
         blob[i], blob[i + 1] = blob[i + 1], blob[i]
 
     # Create temporary DDS file
@@ -206,9 +226,9 @@ def extract_img(source, dest, platform=None):
         platform = IMGFormat.from_img(header).platform
 
     if platform == Platform.X360:
-        __extract_x360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), int.from_bytes(header[16:18], byteorder='big'))
+        __extract_x360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), int.from_bytes(header[16:18], byteorder='big') + 1)
     elif platform == Platform.PS3:
-        __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), int.from_bytes(header[16:18], byteorder='big'))
+        __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), int.from_bytes(header[16:18], byteorder='big') + 1)
     elif platform == Platform.WIIU:
         __extract_wiiu_img(source, dest)
     elif platform == Platform.IOS:
@@ -277,7 +297,7 @@ if __name__ == "__main__":
         sp_convert.add_argument('--game', choices=['ghl', 'djh', 'djh2'], default='ghl', help='Game to convert the IMG to, used in PS3 and X360 textures. Default option is ghl')
         sp_convert.add_argument('--width', type=int, help='Width of the output IMG')
         sp_convert.add_argument('--height', type=int, help='Height of the output IMG')
-        sp_convert.add_argument('--format', choices=['BC1', 'BC3'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
+        sp_convert.add_argument('--format', choices=['BC1', 'BC3', 'R8G8B8A8'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
         sp_convert.add_argument('--mipmap', type=int, default=1, help='Mipmap count of the output IMG. Default option is 1')
 
         args = parser.parse_args()
