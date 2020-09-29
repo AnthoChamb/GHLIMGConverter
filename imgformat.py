@@ -1,5 +1,5 @@
 from enum import Enum
-from ddsformat import TextureFormat
+from textureformat import IOSFormat, WiiUFormat
 
 class Platform(Enum):
     """
@@ -7,8 +7,8 @@ class Platform(Enum):
     """
     X360 = ('Xbox 360', 'big', None)
     PS3 = ('PlayStation 3', 'big', None)
-    WIIU = ('Wii U', 'big', TextureFormat.GTX)
-    IOS = ('iOS', 'little', TextureFormat.PVR)
+    WIIU = ('Wii U', 'big', WiiUFormat.GTX)
+    IOS = ('iOS', 'little', IOSFormat.PVR)
 
     def __init__(self, fullname, byteorder, format):
         self.fullname =fullname

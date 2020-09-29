@@ -1,14 +1,29 @@
 from enum import Enum
 
-class TextureFormat(Enum):
+class TextureFormat():
     """
-    Enum of the supported texture formats
+    Base class of the supported texture formats
+    """
+    def __init__(self, img):
+        self.img = img
+
+class WiiUFormat(TextureFormat, Enum):
+    """
+    Enum of the supported Wii U texture formats
     """
     GTX = (bytes([0x00, 0x05]))
+
+    def __init__(self, img):
+        TextureFormat.__init__(self, img)
+
+class IOSFormat(TextureFormat, Enum):
+    """
+    Enum of the supported iOS texture formats
+    """
     PVR = (bytes([0x00, 0x00]))
 
     def __init__(self, img):
-        self.img = img
+        TextureFormat.__init__(self, img)
 
 class DDSFormat(TextureFormat, Enum):
     """

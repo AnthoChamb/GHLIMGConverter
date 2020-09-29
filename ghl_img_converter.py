@@ -3,7 +3,7 @@ import os
 import subprocess
 
 from PIL import Image
-from ddsformat import DDSFormat
+from textureformat import DDSFormat
 from imgformat import IMGFormat, Platform, Game
 
 config = configparser.ConfigParser()
