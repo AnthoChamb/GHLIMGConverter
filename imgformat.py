@@ -10,10 +10,10 @@ class Platform(Enum):
     WIIU = ('Wii U', 'big', WiiUFormat.GTX)
     IOS = ('iOS', 'little', IOSFormat.PVR)
 
-    def __init__(self, fullname, byteorder, format):
-        self.fullname =fullname
+    def __init__(self, fullname, byteorder, texture):
+        self.fullname = fullname
         self.byteorder = byteorder
-        self.format = format # Default format
+        self.texture = texture # Default format
 
     @staticmethod
     def from_string(value):
@@ -61,7 +61,7 @@ class IMGFormat(Enum):
         self.game = game
         self.img = img
 
-    def get_header(self, width, height, format, mipmap=1):
+    def get_header(self, width, height, texture, mipmap=1):
         """
         Return a IMG header with specified width, height, mipmap count and texture format values
         """
@@ -70,7 +70,7 @@ class IMGFormat(Enum):
         header += (1).to_bytes(2, byteorder=self.platform.byteorder)
         header += width.to_bytes(2, byteorder=self.platform.byteorder)
         header += bytes([0x00, 0x00])
-        header += format.img
+        header += texture.img
         header += bytes([0x00, 0x00])
         header += self.img
 
@@ -84,9 +84,9 @@ class IMGFormat(Enum):
         """
         Return the IMGFormat associated with its platform and game combination
         """
-        for format in IMGFormat:
-            if platform == format.platform and game == format.game:
-                return format
+        for img in IMGFormat:
+            if platform == img.platform and game == img.game:
+                return img
         raise ValueError('Unknown IMG format. This platform and/or game may not be supported')
 
     @staticmethod
@@ -94,7 +94,7 @@ class IMGFormat(Enum):
         """
         Return the IMGFormat associated with its IMG header values
         """
-        for format in IMGFormat:
-            if value[18:20] == format.img[-2:]:
-                return format
+        for img in IMGFormat:
+            if value[18:20] == img.img[-2:]:
+                return img
         raise ValueError('Unknown IMG format. This platform and/or game may not be supported')

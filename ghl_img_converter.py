@@ -27,7 +27,7 @@ def __write(dest, blob):
     file.write(blob)
     file.close()
 
-def create_ps3_img(source, dest, width=None, height=None, format=DDSFormat.BC1, game=Game.GHL, mipmap=1):
+def create_ps3_img(source, dest, width=None, height=None, dds=DDSFormat.BC1, game=Game.GHL, mipmap=1):
     """
     Convert the source image file to a PlayStation 3 IMG file with the specified size, format, game and mipmap count.
     """
@@ -36,18 +36,18 @@ def create_ps3_img(source, dest, width=None, height=None, format=DDSFormat.BC1, 
         width, height = Image.open(source).size
 
     # Resize, convert and create mipmaps for the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format.name + ' -m ' + str(mipmap))
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + dds.name + ' -m ' + str(mipmap))
 
     blob = __read(dest + '.dds')
     os.remove(dest + '.dds')
 
-    if not format.compressed:
+    if not dds.compressed:
         # Swap bytes to ABGR
-        for i in range(format.get_header_size(), len(blob), 4):
+        for i in range(dds.get_header_size(), len(blob), 4):
             blob[i], blob[i + 1], blob[i + 2], blob[i + 3] = blob[i + 3], blob[i + 2], blob[i + 1], blob[i]
 
     # Replace default header with PS3 IMG 20 bytes header from the specified game
-    blob[0:format.get_header_size()] = IMGFormat.from_enums(Platform.PS3, game).get_header(width, height, format, mipmap)
+    blob[0:dds.get_header_size()] = IMGFormat.from_enums(Platform.PS3, game).get_header(width, height, dds, mipmap)
 
     __write(dest, blob)
 
@@ -70,11 +70,11 @@ def create_ios_img(source, dest, width=None, height=None, mipmap=1):
     blob[48:52] = (15).to_bytes(4, byteorder='little')
     
     # Add GHL iOS IMG 20 bytes header
-    blob = IMGFormat.GHLIOS.get_header(width, height, Platform.IOS.format, mipmap) + blob
+    blob = IMGFormat.GHLIOS.get_header(width, height, Platform.IOS.texture, mipmap) + blob
 
     __write(dest, blob)
 
-def create_x360_img(source, dest, width=None, height=None, format=DDSFormat.BC1, game=Game.GHL, mipmap=1):
+def create_x360_img(source, dest, width=None, height=None, dds=DDSFormat.BC1, game=Game.GHL, mipmap=1):
     """
     Convert the source image file to a Xbox 360 IMG file with the specified size, format, game and mipmap count.
     """
@@ -83,22 +83,22 @@ def create_x360_img(source, dest, width=None, height=None, format=DDSFormat.BC1,
         width, height = Image.open(source).size
 
     # Resize, convert and create mipmaps for the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + format.name + ' -m ' + str(mipmap))
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + dds.name + ' -m ' + str(mipmap))
 
     blob = __read(dest + '.dds')
     os.remove(dest + '.dds')
 
     # Swap bytes
-    for i in range(format.get_header_size(), len(blob), 2):
+    for i in range(dds.get_header_size(), len(blob), 2):
         blob[i], blob[i + 1] = blob[i + 1], blob[i]
 
-    if not format.compressed:
+    if not dds.compressed:
         # Swap bytes to ABGR
-        for i in range(format.get_header_size(), len(blob), 4):
+        for i in range(dds.get_header_size(), len(blob), 4):
             blob[i], blob[i + 1], blob[i + 2], blob[i + 3] = blob[i + 3], blob[i + 2], blob[i + 1], blob[i]
 
     # Replace default header with X360 IMG 20 bytes header from the specified game
-    blob[0:format.get_header_size()] = IMGFormat.from_enums(Platform.X360, game).get_header(width, height, format, mipmap)
+    blob[0:dds.get_header_size()] = IMGFormat.from_enums(Platform.X360, game).get_header(width, height, dds, mipmap)
 
     __write(dest, blob)
 
@@ -127,29 +127,29 @@ def create_wiiu_img(source, dest, width=None, height=None, mipmap=1):
     blob = blob[:-32]
 
     # Replace default 32 bytes header with GHL Wii U IMG 20 bytes header
-    blob[0:32] = IMGFormat.GHLWIIU.get_header(width, height, Platform.WIIU.format, mipmap)
+    blob[0:32] = IMGFormat.GHLWIIU.get_header(width, height, Platform.WIIU.texture, mipmap)
 
     __write(dest, blob)
 
-def __extract_ps3_img(source, dest, width, height, format, mipmap):
+def __extract_ps3_img(source, dest, width, height, dds, mipmap):
     """
     Extract the source PS3 IMG file with the specified width, height, format and mipmap count to a decompressed format
     """
     blob = __read(source)
 
     # Replace PS3 IMG 20 bytes header with DDS header
-    blob[0:20] = format.get_header(width, height, mipmap)
+    blob[0:20] = dds.get_header(width, height, mipmap)
 
-    if not format.compressed:
+    if not dds.compressed:
         # Swap bytes to RGBA
-        for i in range(format.get_header_size(), len(blob), 4):
+        for i in range(dds.get_header_size(), len(blob), 4):
             blob[i], blob[i + 1], blob[i + 2], blob[i + 3] = blob[i + 3], blob[i + 2], blob[i + 1], blob[i]
 
     # Create temporary DDS file
     __write(source + '.dds', blob)
 
     # Convert DDS to decompressed format
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + format.name)
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + dds.name)
     os.remove(source + '.dds')
 
 def __extract_ios_img(source, dest):
@@ -168,29 +168,29 @@ def __extract_ios_img(source, dest):
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.pvr" -o "' + source + '.pvr" -d "' + dest + '" -f PVRTC1_4_RGB')
     os.remove(source + '.pvr')
 
-def __extract_x360_img(source, dest, width, height, format, mipmap):
+def __extract_x360_img(source, dest, width, height, dds, mipmap):
     """
     Extract the source Xbox 360 IMG file with the specified width, height, format and mipmap count to a decompressed format
     """
     blob = __read(source)
 
     # Replace X360 IMG 20 bytes header with DDS header
-    blob[0:20] = format.get_header(width, height, mipmap)
+    blob[0:20] = dds.get_header(width, height, mipmap)
 
-    if not format.compressed:
+    if not dds.compressed:
         # Swap bytes to RGBA
-        for i in range(format.get_header_size(), len(blob), 4):
+        for i in range(dds.get_header_size(), len(blob), 4):
             blob[i], blob[i + 1], blob[i + 2], blob[i + 3] = blob[i + 3], blob[i + 2], blob[i + 1], blob[i]
 
     # Swap bytes
-    for i in range(format.get_header_size(), len(blob), 2):
+    for i in range(dds.get_header_size(), len(blob), 2):
         blob[i], blob[i + 1] = blob[i + 1], blob[i]
 
     # Create temporary DDS file
     __write(source + '.dds', blob)
 
     # Convert DDS to decompressed format
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + format.name)
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + dds.name)
     os.remove(source + '.dds')
 
 def __extract_wiiu_img(source, dest):
@@ -242,40 +242,67 @@ def __extract_args(args):
     """
     # Batch extract
     if os.path.isdir(args.input):
-        for subdir, dirs, files in os.walk(args.input):
-            out_folder = os.path.join(args.output, os.path.relpath(subdir, args.input)) if args.output != None else os.path.join('output', os.path.relpath(subdir, args.input))
+        for subdir, _, files in os.walk(args.input):
+            out_folder = os.path.join(args.output if args.output != None else args.input, os.path.relpath(subdir, args.input))
             if not os.path.exists(out_folder):
                 os.mkdir(out_folder)
 
             for f in files:
                 if f.lower().endswith('.img'):
                     try:
-                        extract_img(os.path.join(subdir, f), os.path.join(out_folder, f.replace(f[-4:], '.png')), None if args.platform == None else Platform.from_string(args.platform))
+                        __extract_args_single(args, os.path.join(subdir, f), os.path.join(out_folder, os.path.splitext(f)[0] + '.png'))
                     except ValueError:
                         print('Error with file : ' + os.path.join(subdir, f))
     # Single extract
     else:
-        extract_img(args.input, args.output if args.output != None else args.input.replace(args.input[-4:], '.png'), None if args.platform == None else Platform.from_string(args.platform))
+        __extract_args_single(args, args.input, args.output if args.output != None else os.path.splitext(args.input)[0] + '.png')
+
+def __extract_args_single(args, source, dest):
+    """
+    Extract a single file using the command line arguments and the specified input and output
+    """
+    extract_img(source, dest, None if args.platform == None else Platform.from_string(args.platform))
 
 def __convert_args(args):
     """
     Convert using the commannd line arguments
     """
+    # Batch convert
+    if os.path.isdir(args.input):
+        for subdir, _, files in os.walk(args.input):
+            out_folder = os.path.join(args.output if args.output != None else args.input, os.path.relpath(subdir, args.input))
+            if not os.path.exists(out_folder):
+                os.mkdir(out_folder)
+
+            for f in files:
+                if f.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp')):
+                    try:
+                        __convert_args_single(args, os.path.join(subdir, f), os.path.join(out_folder, os.path.splitext(f)[0] + '.img'))
+                    except ValueError:
+                        print('Error with file : ' + os.path.join(subdir, f))
+    # Single convert
+    else:
+        __convert_args_single(args, args.input, args.output if args.output != None else os.path.splitext(args.input)[0] + '.img')
+
+def __convert_args_single(args, source, dest):
+    """
+    Convert a single file using the command line arguments and the specified input and output
+    """
     if args.platform == 'ps3':
-        create_ps3_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game), args.mipmap)
+        create_ps3_img(source, dest, args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game), args.mipmap)
     elif args.platform == 'ios':
-        create_ios_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.mipmap)
+        create_ios_img(source, dest, args.width, args.height, args.mipmap)
     elif args.platform == 'x360':
-        create_x360_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game), args.mipmap)
+        create_x360_img(source, dest, args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game), args.mipmap)
     elif args.platform == 'wiiu':
-        create_wiiu_img(args.input, args.output if args.output != None else 'output.img', args.width, args.height, args.mipmap)
+        create_wiiu_img(source, dest, args.width, args.height, args.mipmap)
 
 if __name__ == "__main__":
     import sys
 
     # Drag and drop extraction
     if len(sys.argv) == 2 and sys.argv[1].lower().endswith('.img'):
-        extract_img(sys.argv[1], sys.argv[1].replace(sys.argv[1][-4:], '.png'))
+        extract_img(sys.argv[1], os.path.splitext(sys.argv[1])[0] + '.png')
     # Command line usage
     else:
         import argparse

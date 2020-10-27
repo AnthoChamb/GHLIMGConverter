@@ -53,7 +53,7 @@ class DDSFormat(TextureFormat, Enum):
         w = width
         h = height
 
-        for i in range(mipmap):
+        for _ in range(mipmap):
             size += self.get_size(w, h)
             w //= 2
             h //= 2
@@ -112,9 +112,9 @@ class DDSFormat(TextureFormat, Enum):
         """
         Return the DDS format associated with its name as defined in the command line options
         """
-        for format in DDSFormat:
-            if value == format.name:
-                return format
+        for dds in DDSFormat:
+            if value == dds.name:
+                return dds
         raise ValueError('Unknown format')
 
     @staticmethod
@@ -122,7 +122,7 @@ class DDSFormat(TextureFormat, Enum):
         """
         Return the DDS format associated with its IMG header value
         """
-        for format in DDSFormat:
-            if value[10:12] == format.img:
-                return format
+        for dds in DDSFormat:
+            if value[10:12] == dds.img:
+                return dds
         raise ValueError('Unknown format')
