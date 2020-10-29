@@ -217,24 +217,41 @@ def extract_img(source, dest, platform=None):
     """
     Extract the source IMG file to a decompressed format
     """
-    img = open(source, 'rb')
-    header = img.read(20)
-    img.close()
+    reader = open(source, 'rb')
+    header = reader.read(20)
+    reader.close()
 
     # Identify the platform of the IMG
     if platform == None:
         platform = IMGFormat.from_img(header).platform
 
     if platform == Platform.X360:
-        __extract_x360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), int.from_bytes(header[16:18], byteorder='big') + 1)
+        __extract_x360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), platform.get_mipmap_from_img(header))
     elif platform == Platform.PS3:
-        __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), int.from_bytes(header[16:18], byteorder='big') + 1)
+        __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), platform.get_mipmap_from_img(header))
     elif platform == Platform.WIIU:
         __extract_wiiu_img(source, dest)
     elif platform == Platform.IOS:
         __extract_ios_img(source, dest)
     else:
         raise ValueError('Platform not supported')
+
+def print_info(path):
+    """
+    Prints the informations about the IMG file
+    """
+    reader = open(path, 'rb')
+    header = reader.read(20)
+    reader.close()
+
+    img = IMGFormat.from_img(header)
+
+    print('Width          = ' + str(int.from_bytes(header[0:2], byteorder=img.platform.byteorder)))
+    print('Height         = ' + str(int.from_bytes(header[2:4], byteorder=img.platform.byteorder)))
+    print('Texture format = ' + (img.platform.texture.name if img.platform.texture != None else DDSFormat.from_img(header).name))
+    print('Mipmap count   = ' + str(img.platform.get_mipmap_from_img(header)))
+    print('Platform       = ' + (img.platform.fullname if img.game == Game.GHL else (Platform.X360.fullname + ' or ' + Platform.PS3.fullname)))
+    print('Game           = ' + (img.game.value if img.game == Game.GHL else (Game.DJH.value + ' or ' + Game.DJH2.value)))
 
 def __extract_args(args):
     """
@@ -297,6 +314,12 @@ def __convert_args_single(args, source, dest):
     elif args.platform == 'wiiu':
         create_wiiu_img(source, dest, args.width, args.height, args.mipmap)
 
+def __info_args(args):
+    """
+    Prints the informations using the command line arguments
+    """
+    print_info(args.input)
+
 if __name__ == "__main__":
     import sys
 
@@ -318,14 +341,18 @@ if __name__ == "__main__":
 
         sp_convert = sp.add_parser('convert', help='Convert an image to a IMG file')
         sp_convert.set_defaults(func=__convert_args)
-        sp_convert.add_argument('input', help='Path of the input image to convert')
-        sp_convert.add_argument('--output', help='Path to the output IMG')
+        sp_convert.add_argument('input', help='Path of the input image or root folder to convert')
+        sp_convert.add_argument('--output', help='Path to the output IMG or folder')
         sp_convert.add_argument('--platform', choices=['ps3', 'ios', 'x360', 'wiiu'], required=True, help='Platform to convert the IMG to')
         sp_convert.add_argument('--game', choices=['ghl', 'djh', 'djh2'], default='ghl', help='Game to convert the IMG to, used in PS3 and X360 textures. Default option is ghl')
         sp_convert.add_argument('--width', type=int, help='Width of the output IMG')
         sp_convert.add_argument('--height', type=int, help='Height of the output IMG')
         sp_convert.add_argument('--format', choices=['BC1', 'BC3', 'R8G8B8A8'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
         sp_convert.add_argument('--mipmap', type=int, default=1, help='Mipmap count of the output IMG. Default option is 1')
+
+        sp_info = sp.add_parser('info', help='Prints the informations about the IMG file')
+        sp_info.set_defaults(func=__info_args)
+        sp_info.add_argument('input', help='Path of the input IMG file')
 
         args = parser.parse_args()
         args.func(args)

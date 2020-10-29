@@ -24,9 +24,9 @@ ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wi
 ```
 
 #### Arguments
-`input` Path of the input image to convert
+`input` Path of the input image or root folder to convert
 
-`--output OUTPUT` Path to the output IMG
+`--output OUTPUT` Path to the output IMG or folder
 
 `--platform {ps3,ios,x360,wiiu}` Platform to convert the IMG to
 
@@ -39,6 +39,16 @@ ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wi
 `--format {BC1,BC3,R8G8B8A8}` DDS format of the output IMG, used in PS3 and X360 textures. Default option is `BC1`
 
 `--mipmap MIPMAP` Mipmap count of the output IMG. Default option is `1`
+
+### Informations
+Prints the **informations** about the IMG file
+
+```
+ghl_img_converter.py info input
+```
+
+#### Arguments
+`input` Path of the input IMG file
 
 ## Requirements
 This program currently requires [PVRTexToolCLI.exe](https://www.imgtec.com/developers/powervr-sdk-tools/pvrtextool/) installed and added to your `config.ini` file

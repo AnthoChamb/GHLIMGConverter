@@ -5,15 +5,22 @@ class Platform(Enum):
     """
     Enum of the supported platforms
     """
-    X360 = ('Xbox 360', 'big', None)
-    PS3 = ('PlayStation 3', 'big', None)
-    WIIU = ('Wii U', 'big', WiiUFormat.GTX)
-    IOS = ('iOS', 'little', IOSFormat.PVR)
+    X360 = ('Xbox 360', 'big', None, 1)
+    PS3 = ('PlayStation 3', 'big', None, 1)
+    WIIU = ('Wii U', 'big', WiiUFormat.GTX, 1)
+    IOS = ('iOS', 'little', IOSFormat.PVR, 0)
 
-    def __init__(self, fullname, byteorder, texture):
+    def __init__(self, fullname, byteorder, texture, mipmap):
         self.fullname = fullname
         self.byteorder = byteorder
         self.texture = texture # Default format
+        self.mipmap = mipmap # Default mipmap count
+
+    def get_mipmap_from_img(self, header):
+        """
+        Return the mipmap count from the specified IMG header and platform
+        """
+        return int.from_bytes(header[16:18], byteorder=self.byteorder) + self.mipmap
 
     @staticmethod
     def from_string(value):
@@ -71,11 +78,8 @@ class IMGFormat(Enum):
         header += width.to_bytes(2, byteorder=self.platform.byteorder)
         header += bytes([0x00, 0x00])
         header += texture.img
-        header += bytes([0x00, 0x00])
         header += self.img
-
-        if mipmap > 1:
-            header[16:18] = (mipmap - (0 if self.platform == Platform.IOS else 1)).to_bytes(2, byteorder=self.platform.byteorder)
+        header[16:18] = (mipmap - self.platform.mipmap).to_bytes(2, byteorder=self.platform.byteorder)
 
         return header
 
