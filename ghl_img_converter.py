@@ -2,8 +2,7 @@ import configparser
 import os
 import subprocess
 
-from PIL import Image
-from textureformat import DDSFormat
+from textureformat import DDSFormat, IOSFormat
 from imgformat import IMGFormat, Platform, Game
 
 config = configparser.ConfigParser()
@@ -27,18 +26,23 @@ def __write(dest, blob):
     file.write(blob)
     file.close()
 
+def __create__pvrtextoolcli(source, dest, ext, width, height, texture, mipmap):
+    """
+    Convert the source image using PVRTexToolCLI
+    """
+    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + ext + '"' + ('' if width == None or height == None else (' -r ' + str(width) + ',' + str(height))) + ' -f ' +texture + ' -m ' + str(mipmap))
+
 def create_ps3_img(source, dest, width=None, height=None, dds=DDSFormat.BC1, game=Game.GHL, mipmap=1):
     """
     Convert the source image file to a PlayStation 3 IMG file with the specified size, format, game and mipmap count.
     """
-    # Get original image width and height if not specified
-    if width == None or height == None:
-        width, height = Image.open(source).size
-
-    # Resize, convert and create mipmaps for the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + dds.name + ' -m ' + str(mipmap))
+    __create__pvrtextoolcli(source, dest, '.dds', width, height, dds.name, mipmap)
 
     blob = __read(dest + '.dds')
+
+    if width == None or height == None:
+        width, height = dds.get_sizes_from_header(blob)
+
     os.remove(dest + '.dds')
 
     if not dds.compressed:
@@ -55,14 +59,13 @@ def create_ios_img(source, dest, width=None, height=None, mipmap=1):
     """
     Convert the source image file to a GHL iOS IMG file with the specified size and mipmap count.
     """
-    # Get original image width and height if not specified
-    if width == None or height == None:
-        width, height = Image.open(source).size
-
-    # Resize, convert and create mipmaps for the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.pvr" -r ' + str(width) + ',' + str(height) + ' -f PVRTC1_4 -m ' + str(mipmap))
+    __create__pvrtextoolcli(source, dest, '.pvr', width, height, 'PVRTC1_4', mipmap)
 
     blob = __read(dest + '.pvr')
+
+    if width == None or height == None:
+        width, height = IOSFormat.get_sizes_from_header(blob)
+
     os.remove(dest + '.pvr')
 
     # Truncate metadata block and adjust metadata size in the PVR header
@@ -78,14 +81,13 @@ def create_x360_img(source, dest, width=None, height=None, dds=DDSFormat.BC1, ga
     """
     Convert the source image file to a Xbox 360 IMG file with the specified size, format, game and mipmap count.
     """
-    # Get original image width and height if not specified
-    if width == None or height == None:
-        width, height = Image.open(source).size
-
-    # Resize, convert and create mipmaps for the original image
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.dds" -r ' + str(width) + ',' + str(height) + ' -f ' + dds.name + ' -m ' + str(mipmap))
+    __create__pvrtextoolcli(source, dest, '.dds', width, height, dds.name, mipmap)
 
     blob = __read(dest + '.dds')
+
+    if width == None or height == None:
+        width, height = dds.get_sizes_from_header(blob)
+
     os.remove(dest + '.dds')
 
     # Swap bytes
@@ -106,15 +108,16 @@ def create_wiiu_img(source, dest, width=None, height=None, mipmap=1):
     """
     Convert the source image file to a GHL Wii U IMG file with the specified size and mipmap count.
     """
-    # Get original image width and height if not specified
-    if width == None or height == None:
-        width, height = Image.open(source).size
-
-    # Resize and create mipmaps for the original image and convert to a temporary DDS texture
-    subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + '.temp.dds" -r ' + str(width) + ',' + str(height) + ' -f BC1 -m ' + str(mipmap))
+    __create__pvrtextoolcli(source, dest, '.temp.dds', width, height, DDSFormat.BC1.name, mipmap)
 
     # Convert the temporary file to a GTX texture
     subprocess.call('python ' + config['path']['gtx_extract'] + ' -o "' + dest + '.gtx" "' + dest + '.temp.dds"', shell=True)
+
+    blob = __read(dest + '.temp.dds')
+
+    if width == None or height == None:
+        width, height = DDSFormat.get_sizes_from_header(blob)
+
     os.remove(dest + '.temp.dds')
 
     blob = __read(dest + '.gtx')

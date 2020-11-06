@@ -51,7 +51,7 @@ ghl_img_converter.py info input
 `input` Path of the input IMG file
 
 ## Requirements
-This program currently requires [PVRTexToolCLI.exe](https://www.imgtec.com/developers/powervr-sdk-tools/pvrtextool/) installed and added to your `config.ini` file
+This program currently requires [PVRTexToolCLI.exe](https://www.imgtec.com/developers/powervr-sdk-tools/legacy-downloads/) version 4.23 or earlier installed and added to your `config.ini` file. Downloading PowerVRSDK-4.0 is recommended.
 
 Wii U conversion also requires [gtx_extractor.py](https://github.com/aboood40091/GTX-Extractor) installed and added to your `config.ini` file
 

@@ -25,6 +25,13 @@ class IOSFormat(TextureFormat, Enum):
     def __init__(self, img):
         TextureFormat.__init__(self, img)
 
+    @staticmethod
+    def get_sizes_from_header(header):
+        """
+        Return the width and height values from the PVR header of a texture
+        """
+        return int.from_bytes(header[28:32], byteorder='little'), int.from_bytes(header[24:28], byteorder='little')
+
 class DDSFormat(TextureFormat, Enum):
     """
     Enum of the supported DDS texture formats
@@ -106,6 +113,13 @@ class DDSFormat(TextureFormat, Enum):
         Return the size of the DDS header of this format
         """
         return 84 + len(self.dxt)
+
+    @staticmethod
+    def get_sizes_from_header(header):
+        """
+        Return the width and height values from the DDS header of a texture
+        """
+        return int.from_bytes(header[16:20], byteorder='little'), int.from_bytes(header[12:16], byteorder='little')
 
     @staticmethod
     def from_string(value):
