@@ -1,4 +1,5 @@
 from enum import Enum
+import struct
 
 class TextureFormat():
     """
@@ -6,6 +7,37 @@ class TextureFormat():
     """
     def __init__(self, img):
         self.img = img
+
+class BlockTextureFormat(TextureFormat):
+    """
+    Base class of the supported block based texture formats
+    """
+    def __init__(self, img, width, height, size):
+        TextureFormat.__init__(self, img)
+        self.width = width # Block width
+        self.height = height # Block height
+        self.size = size # Block size
+
+    def get_size(self, width, height):
+        """
+        Return the size of the texture with the specified width and height values
+        """
+        return max(1, (width + self.width - 1) // self.width) * max(1, (height + self.height - 1) // self.height) * self.size
+
+    def get_size_mipmap(self, width, height, mipmap):
+        """
+        Return the size of the texture with specifed width, height and mipmap count
+        """
+        size = 0
+        w = width
+        h = height
+
+        for _ in range(mipmap):
+            size += self.get_size(w, h)
+            w //= 2
+            h //= 2
+
+        return size
 
 class WiiUFormat(TextureFormat, Enum):
     """
@@ -32,40 +64,18 @@ class IOSFormat(TextureFormat, Enum):
         """
         return int.from_bytes(header[28:32], byteorder='little'), int.from_bytes(header[24:28], byteorder='little')
 
-class DDSFormat(TextureFormat, Enum):
+class DDSFormat(BlockTextureFormat, Enum):
     """
     Enum of the supported DDS texture formats
     """
     BC1 = (bytes([0x00, 0x05, 0x00, 0x00]), bytes([0x44, 0x58, 0x54, 0x31, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), 8, True) # DXT1
-    BC3 = (bytes([0x00, 0x09, 0x00, 0xFF]),bytes([0x44, 0x58, 0x54, 0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), 16, True) # DXT5
+    BC3 = (bytes([0x00, 0x09, 0x00, 0xFF]), bytes([0x44, 0x58, 0x54, 0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), 16, True) # DXT5
     R8G8B8A8 = (bytes([0x00, 0x03, 0x00, 0x00]), bytes([0x44, 0x58, 0x31, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1C, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), 32, False)
 
     def __init__(self, img, dxt, size, compressed):
-        TextureFormat.__init__(self, img)
+        BlockTextureFormat.__init__(self, img, 4, 4, size)
         self.dxt = dxt
-        self.size = size # Bytes to store a block of 4x4 pixels
         self.compressed = compressed
-
-    def get_size(self, width, height):
-        """
-        Return the size of the DDS texture with the specified width and height values
-        """
-        return max(1, (width + 3) // 4) * max(1, (height + 3) // 4) * self.size
-
-    def get_size_mipmap(self, width, height, mipmap):
-        """
-        Return the size of the DDS texture with specifed width, height and mipmap count
-        """
-        size = 0
-        w = width
-        h = height
-
-        for _ in range(mipmap):
-            size += self.get_size(w, h)
-            w //= 2
-            h //= 2
-
-        return size
 
     def get_pitch(self, width):
         """
@@ -139,4 +149,66 @@ class DDSFormat(TextureFormat, Enum):
         for dds in DDSFormat:
             if value[10:12] == dds.img[0:2]:
                 return dds
+        raise ValueError('Unknown format')
+
+class TEX0Format(BlockTextureFormat, Enum):
+    """
+    Enum of the supported TEX0 texture formats
+    """
+    CMPR = (bytes([0x00, 0x05, 0x00, 0x00]), bytes([0x00, 0x00, 0x00, 0x0E]), 8, 8, 32)
+    RGB5A3 = (bytes([0x00, 0x02, 0x00, 0x00]), bytes([0x00, 0x00, 0x00, 0x05]), 4, 4, 32)
+    IA4 = (bytes([0x00, 0x01, 0x00, 0x00]), bytes([0x00, 0x00, 0x00, 0x02]), 8, 4, 32)
+
+    def __init__(self, img, tex0, width, height, size):
+        BlockTextureFormat.__init__(self, img, width, height, size)
+        self.tex0 = tex0
+
+    def get_header(self, width, height, mipmap):
+        """
+        Return a TEX0 header with the specified width, height and mipmap count values
+        """
+        size = self.get_size_mipmap(width, height, mipmap)
+
+        header = bytes([0x54, 0x45, 0x58, 0x30])
+        header += (size + 64).to_bytes(4, byteorder='big')
+        header += (3).to_bytes(4, byteorder='big')
+        header += bytes([0x00, 0x00, 0x00, 0x00])
+        header += (64).to_bytes(4, byteorder='big')
+        header += (size + 64).to_bytes(4, byteorder='big')
+        header += bytes([0x00, 0x00, 0x00, 0x00])
+        header += width.to_bytes(2, byteorder='big')
+        header += height.to_bytes(2, byteorder='big')
+        header += self.tex0
+        header += mipmap.to_bytes(4, byteorder='big')
+        header += bytes([0x00, 0x00, 0x00, 0x00])
+        header += struct.pack(">f", mipmap - 1.0)
+        header += bytes([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+
+        return header
+
+    @staticmethod
+    def get_sizes_from_header(header):
+        """
+        Return the width and height values from the TEX0 header of a texture
+        """
+        return int.from_bytes(header[28:30], byteorder='big'), int.from_bytes(header[30:32], byteorder='big')
+
+    @staticmethod
+    def from_string(value):
+        """
+        Return the TEX0 format associated with its name as defined in the command line options
+        """
+        for tex0 in TEX0Format:
+            if value == tex0.name:
+                return tex0
+        raise ValueError('Unknown format')
+
+    @staticmethod
+    def from_img(value):
+        """
+        Return the TEX0 format associated with its IMG header value
+        """
+        for tex0 in TEX0Format:
+            if value[10:14] == tex0.img:
+                return tex0
         raise ValueError('Unknown format')

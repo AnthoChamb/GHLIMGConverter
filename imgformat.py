@@ -7,6 +7,7 @@ class Platform(Enum):
     """
     X360 = ('Xbox 360', 'big', None, 1)
     PS3 = ('PlayStation 3', 'big', None, 1)
+    WII = ('Wii', 'big', None, 1)
     WIIU = ('Wii U', 'big', WiiUFormat.GTX, 1)
     IOS = ('iOS', 'little', IOSFormat.PVR, 0)
 
@@ -60,8 +61,10 @@ class IMGFormat(Enum):
     GHLIOS = (Platform.IOS, Game.GHL, bytes([0x00, 0x00, 0x01 ,0x00, 0x00, 0x06]))
     DJHX360 = (Platform.X360, Game.DJH, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
     DJHPS3 = (Platform.PS3, Game.DJH, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
+    DJHWII = (Platform.WII, Game.DJH, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
     DJH2X360 = (Platform.X360, Game.DJH2, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
     DJH2PS3 = (Platform.PS3, Game.DJH2, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
+    DJH2WII = (Platform.WII, Game.DJH2, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
 
     def __init__(self, platform, game, img):
         self.platform = platform

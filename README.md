@@ -6,7 +6,7 @@ A python script and module to extract and convert to IMG files used in some FSG 
 **Extract** a IMG file to a decompressed format
 
 ```
-ghl_img_converter.py extract input [--output OUTPUT] [--platform {ps3,ios,x360,wiiu}]
+ghl_img_converter.py extract input [--output OUTPUT] [--platform {ps3,ios,x360,wiiu,wii}]
 ```
 
 #### Arguments
@@ -14,7 +14,7 @@ ghl_img_converter.py extract input [--output OUTPUT] [--platform {ps3,ios,x360,w
 
 `--output OUTPUT` Path to the output decompressed format or output folder
 
-`--platform {ps3,ios,x360,wiiu}` Force extraction from the specified platform
+`--platform {ps3,ios,x360,wiiu,wii}` Force extraction from the specified platform
 
 ### Conversion
 **Convert** an image to a IMG file
@@ -55,7 +55,9 @@ ghl_img_converter.py info input
 ## Requirements
 This program currently requires [PVRTexToolCLI.exe](https://www.imgtec.com/developers/powervr-sdk-tools/legacy-downloads/) version 4.23 or earlier installed and added to your `config.ini` file. Downloading PowerVRSDK-4.0 is recommended.
 
-Wii U conversion also requires [gtx_extractor.py](https://github.com/aboood40091/GTX-Extractor) installed and added to your `config.ini` file
+Wii U conversion also requires [gtx_extractor.py](https://github.com/aboood40091/GTX-Extractor) installed and added to your `config.ini` file.
+
+Wii conversion only requires [wimgt.exe](https://szs.wiimm.de/wimgt/) installed and added to your `config.ini` file.
 
 ## Contributing
 Feel free to contribute for more formats and platforms support

@@ -2,7 +2,7 @@ import configparser
 import os
 import subprocess
 
-from textureformat import DDSFormat, IOSFormat
+from textureformat import DDSFormat, IOSFormat, TEX0Format
 from imgformat import IMGFormat, Platform, Game
 
 config = configparser.ConfigParser()
@@ -17,6 +17,16 @@ def __read(filename):
     blob = bytearray(file.read())
     file.close()
     return blob
+
+def __read_header(filename):
+    """
+    Read the specified file.
+    Return a byte array of the IMG header.
+    """
+    file = open(filename, 'rb')
+    header = file.read(20)
+    file.close()
+    return header
 
 def __write(dest, blob):
     """
@@ -216,13 +226,27 @@ def __extract_wiiu_img(source, dest):
     subprocess.call(config['path']['gtx_extract'] + ' -o "' + dest + '" "' + source + '.gtx"', shell=True)
     os.remove(source + '.gtx')
 
+def __extract_wii_img(source, dest, width, height, tex0, mipmap):
+    """
+    Extract the source Wii IMG file with the specified width, height, format and mipmap count to a decompressed format
+    """
+    blob = __read(source)
+
+    # Replace Wii IMG 20 bytes header with TEX0 header
+    blob[0:20] = tex0.get_header(width, height, mipmap)
+
+    # Create temporary TEX0 file
+    __write(source + '.tex', blob)
+    
+    # Convert TEX0 to decompressed format
+    subprocess.call(config['path']['wimgt'] + ' decode "' + source + '.tex" -d "' + dest + '" --no-mm')
+    os.remove(source + '.tex')
+
 def extract_img(source, dest, platform=None):
     """
     Extract the source IMG file to a decompressed format
     """
-    reader = open(source, 'rb')
-    header = reader.read(20)
-    reader.close()
+    header = __read_header(source)
 
     # Identify the platform of the IMG
     if platform == None:
@@ -232,6 +256,8 @@ def extract_img(source, dest, platform=None):
         __extract_x360_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), platform.get_mipmap_from_img(header))
     elif platform == Platform.PS3:
         __extract_ps3_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), DDSFormat.from_img(header), platform.get_mipmap_from_img(header))
+    elif platform == Platform.WII:
+        __extract_wii_img(source, dest, int.from_bytes(header[0:2], byteorder='big'), int.from_bytes(header[2:4], byteorder='big'), TEX0Format.from_img(header), platform.get_mipmap_from_img(header))
     elif platform == Platform.WIIU:
         __extract_wiiu_img(source, dest)
     elif platform == Platform.IOS:
@@ -243,17 +269,14 @@ def print_info(path):
     """
     Prints the informations about the IMG file
     """
-    reader = open(path, 'rb')
-    header = reader.read(20)
-    reader.close()
-
+    header = __read_header(source)
     img = IMGFormat.from_img(header)
 
     print('Width          = ' + str(int.from_bytes(header[0:2], byteorder=img.platform.byteorder)))
     print('Height         = ' + str(int.from_bytes(header[2:4], byteorder=img.platform.byteorder)))
     print('Texture format = ' + (img.platform.texture.name if img.platform.texture != None else DDSFormat.from_img(header).name))
     print('Mipmap count   = ' + str(img.platform.get_mipmap_from_img(header)))
-    print('Platform       = ' + (img.platform.fullname if img.game == Game.GHL else (Platform.X360.fullname + ' or ' + Platform.PS3.fullname)))
+    print('Platform       = ' + (img.platform.fullname if img.game == Game.GHL else (Platform.X360.fullname + ', ' + Platform.PS3.fullname + ' or ' + Platform.WII.fullname)))
     print('Game           = ' + (img.game.value if img.game == Game.GHL else (Game.DJH.value + ' or ' + Game.DJH2.value)))
 
 def __extract_args(args):
@@ -340,7 +363,7 @@ if __name__ == "__main__":
         sp_extract.set_defaults(func=__extract_args)
         sp_extract.add_argument('input', help='Path of the input IMG file or root folder to extract')
         sp_extract.add_argument('--output', help='Path to the output decompressed format or output folder')
-        sp_extract.add_argument('--platform', choices=['ps3', 'ios', 'x360', 'wiiu'], help='Force extraction from the specified platform')
+        sp_extract.add_argument('--platform', choices=['ps3', 'ios', 'x360', 'wiiu', 'wii'], help='Force extraction from the specified platform')
 
         sp_convert = sp.add_parser('convert', help='Convert an image to a IMG file')
         sp_convert.set_defaults(func=__convert_args)
