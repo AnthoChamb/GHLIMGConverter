@@ -20,7 +20,7 @@ ghl_img_converter.py extract input [--output OUTPUT] [--platform {ps3,ios,x360,w
 **Convert** an image to a IMG file
 
 ```
-ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wiiu} [--game {ghl,djh,djh2}] [--width WIDTH] [--height HEIGHT] [--format {BC1,BC3,R8G8B8A8}] [--mipmap MIPMAP] [--flip]
+ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wiiu,wii} [--game {ghl,djh,djh2}] [--width WIDTH] [--height HEIGHT] [--format {BC1,BC3,R8G8B8A8}] [--tex0 {CMPR,RGB5A3,IA4}] [--mipmap MIPMAP] [--flip]
 ```
 
 #### Arguments
@@ -28,19 +28,21 @@ ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wi
 
 `--output OUTPUT` Path to the output IMG or folder
 
-`--platform {ps3,ios,x360,wiiu}` Platform to convert the IMG to
+`--platform {ps3,ios,x360,wiiu,wii}` Platform to convert the IMG to
 
 `--game {ghl,djh,djh2}` Game to convert the IMG to, used in PS3 and X360 textures. Default option is `ghl`
 
-`--width WIDTH` Width of the output IMG
+`--width WIDTH` Width of the output IMG.  Not supported on Wii textures
 
-`--height HEIGHT` Height of the output IMG
+`--height HEIGHT` Height of the output IMG.  Not supported on Wii textures
 
 `--format {BC1,BC3,R8G8B8A8}` DDS format of the output IMG, used in PS3 and X360 textures. Default option is `BC1`
 
+`--tex0 {CMPR,RGB5A3,IA4}` TEX0 format of the output IMG, used in Wii textures. Default option is `RGB5A3`
+
 `--mipmap MIPMAP` Mipmap count of the output IMG. Default option is `1`
 
-`--flip` Vertically flip the output IMG
+`--flip` Vertically flip the output IMG. Not supported on Wii textures
 
 ### Informations
 Prints the **informations** about the IMG file

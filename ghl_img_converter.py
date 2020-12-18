@@ -144,6 +144,27 @@ def create_wiiu_img(source, dest, width=None, height=None, mipmap=1, flip=False)
 
     __write(dest, blob)
 
+def create_wii_img(source, dest, tex0=TEX0Format.RGB5A3, game=Game.DJH2, mipmap=1):
+    """
+    Convert the source image file to a Wii IMG file with the specified format, game and mipmap count.
+    """
+    # Convert the source file to a TEX0 texture
+    subprocess.call(config['path']['wimgt'] + ' encode "' + source + '" -d "' + dest + '.tex" -x ' + tex0.name + ' --n-mm ' + str(mipmap - 1))
+
+    blob = __read(dest + '.tex')
+
+    width, height = TEX0Format.get_sizes_from_header(blob)
+
+    os.remove(dest + '.tex')
+
+    # Replace default header with Wii IMG 20 bytes header from the specified game
+    blob[0:64] = IMGFormat.from_enums(Platform.WII, game).get_header(width, height, tex0, mipmap)
+    
+    # Remove name metadata
+    blob = blob[:tex0.get_size_mipmap(width, height, mipmap) + 20]
+
+    __write(dest, blob)
+
 def __extract_ps3_img(source, dest, width, height, dds, mipmap):
     """
     Extract the source PS3 IMG file with the specified width, height, format and mipmap count to a decompressed format
@@ -339,6 +360,8 @@ def __convert_args_single(args, source, dest):
         create_x360_img(source, dest, args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game), args.mipmap, args.flip)
     elif args.platform == 'wiiu':
         create_wiiu_img(source, dest, args.width, args.height, args.mipmap, args.flip)
+    elif args.platform == 'wii':
+        create_wii_img(source, dest, TEX0Format.from_string(args.tex0), Game.from_string(args.game), args.mipmap)
 
 def __info_args(args):
     """
@@ -369,13 +392,14 @@ if __name__ == "__main__":
         sp_convert.set_defaults(func=__convert_args)
         sp_convert.add_argument('input', help='Path of the input image or root folder to convert')
         sp_convert.add_argument('--output', help='Path to the output IMG or folder')
-        sp_convert.add_argument('--platform', choices=['ps3', 'ios', 'x360', 'wiiu'], required=True, help='Platform to convert the IMG to')
+        sp_convert.add_argument('--platform', choices=['ps3', 'ios', 'x360', 'wiiu', 'wii'], required=True, help='Platform to convert the IMG to')
         sp_convert.add_argument('--game', choices=['ghl', 'djh', 'djh2'], default='ghl', help='Game to convert the IMG to, used in PS3 and X360 textures. Default option is ghl')
-        sp_convert.add_argument('--width', type=int, help='Width of the output IMG')
-        sp_convert.add_argument('--height', type=int, help='Height of the output IMG')
+        sp_convert.add_argument('--width', type=int, help='Width of the output IMG. Not supported on Wii textures')
+        sp_convert.add_argument('--height', type=int, help='Height of the output IMG. Not supported on Wii textures')
         sp_convert.add_argument('--format', choices=['BC1', 'BC3', 'R8G8B8A8'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
+        sp_convert.add_argument('--tex0', choices=['CMPR', 'RGB5A3', 'IA4'], default='RGB5A3', help='TEX0 format of the output IMG, used in Wii textures. Default option is RGB5A3')
         sp_convert.add_argument('--mipmap', type=int, default=1, help='Mipmap count of the output IMG. Default option is 1')
-        sp_convert.add_argument('--flip', action="store_true", default=False, help='Vertically flip the output IMG')
+        sp_convert.add_argument('--flip', action="store_true", default=False, help='Vertically flip the output IMG. Not supported on Wii textures')
 
         sp_info = sp.add_parser('info', help='Prints the informations about the IMG file')
         sp_info.set_defaults(func=__info_args)
