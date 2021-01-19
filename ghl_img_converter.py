@@ -396,7 +396,7 @@ if __name__ == "__main__":
         sp_convert.add_argument('--game', choices=['ghl', 'djh', 'djh2'], default='ghl', help='Game to convert the IMG to, used in PS3 and X360 textures. Default option is ghl')
         sp_convert.add_argument('--width', type=int, help='Width of the output IMG. Not supported on Wii textures')
         sp_convert.add_argument('--height', type=int, help='Height of the output IMG. Not supported on Wii textures')
-        sp_convert.add_argument('--format', choices=['BC1', 'BC3', 'R8G8B8A8'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
+        sp_convert.add_argument('--format', choices=['BC1', 'BC2', 'BC3', 'R8G8B8A8'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
         sp_convert.add_argument('--tex0', choices=['CMPR', 'RGB5A3', 'IA4'], default='RGB5A3', help='TEX0 format of the output IMG, used in Wii textures. Default option is RGB5A3')
         sp_convert.add_argument('--mipmap', type=int, default=1, help='Mipmap count of the output IMG. Default option is 1')
         sp_convert.add_argument('--flip', action="store_true", default=False, help='Vertically flip the output IMG. Not supported on Wii textures')
