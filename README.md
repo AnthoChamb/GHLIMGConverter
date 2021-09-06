@@ -40,12 +40,12 @@ ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wi
 
 `--tex0 {CMPR,RGB5A3,IA4}` TEX0 format of the output IMG, used in Wii textures. Default option is `RGB5A3`
 
-`--mipmap MIPMAP` Mipmap count of the output IMG. Default option is `1`
+`--mipmap MIPMAP` Mipmap count of the output IMG
 
 `--flip` Vertically flip the output IMG. Not supported on Wii textures
 
-### Informations
-Prints the **informations** about the IMG file
+### Information
+Prints **information** about the IMG file
 
 ```
 ghl_img_converter.py info input

@@ -286,16 +286,63 @@ def extract_img(source, dest, platform=None):
     else:
         raise ValueError('Platform not supported')
 
+def __format_list(elements, separator = ', ', last_separator = ', ', empty = 'Empty', selector = lambda x : str(x)):
+    """
+    Return a formatted string from a list of elements
+    """
+    count = len(elements)
+
+    if count > 0:
+        result = ''
+
+        for i in range(count):
+            result += selector(elements[i])
+
+            if i <  count - 1:
+                if i < count - 2:
+                    result += separator
+                else:
+                    result += last_separator
+        
+        return result
+    else:
+        return empty
+
+def get_texture_formats(header, available_enums):
+    """
+    Return the texture formats associated with the specified IMG header value from a list of available texture format enums
+    """
+    textures = []
+        
+    for enum in available_enums:
+        try:
+            textures.append(enum.from_img(header))
+        except ValueError:
+            continue
+    
+    return textures
+
+def __get_texture_format_info(img, header):
+    """
+    Return a formatted string of the texture format information from an IMG format and its IMG header value
+    """
+    if img.platform.texture != None:
+        return img.platform.texture.name
+    else:
+        available_enums = [DDSFormat] if img.game == Game.GHL else [DDSFormat, TEX0Format]
+        textures = get_texture_formats(header, available_enums)
+        return __format_list(textures, ', ', ' or ', 'Unknown format', lambda x : x.name)
+
 def print_info(path):
     """
-    Prints the informations about the IMG file
+    Prints information about the IMG file
     """
-    header = __read_header(source)
+    header = __read_header(path)
     img = IMGFormat.from_img(header)
 
     print('Width          = ' + str(int.from_bytes(header[0:2], byteorder=img.platform.byteorder)))
     print('Height         = ' + str(int.from_bytes(header[2:4], byteorder=img.platform.byteorder)))
-    print('Texture format = ' + (img.platform.texture.name if img.platform.texture != None else DDSFormat.from_img(header).name))
+    print('Texture format = ' + __get_texture_format_info(img, header))
     print('Mipmap count   = ' + str(img.platform.get_mipmap_from_img(header)))
     print('Platform       = ' + (img.platform.fullname if img.game == Game.GHL else (Platform.X360.fullname + ', ' + Platform.PS3.fullname + ' or ' + Platform.WII.fullname)))
     print('Game           = ' + (img.game.value if img.game == Game.GHL else (Game.DJH.value + ' or ' + Game.DJH2.value)))
@@ -398,10 +445,10 @@ if __name__ == "__main__":
         sp_convert.add_argument('--height', type=int, help='Height of the output IMG. Not supported on Wii textures')
         sp_convert.add_argument('--format', choices=['BC1', 'BC2', 'BC3', 'R8G8B8A8'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
         sp_convert.add_argument('--tex0', choices=['CMPR', 'RGB5A3', 'IA4'], default='RGB5A3', help='TEX0 format of the output IMG, used in Wii textures. Default option is RGB5A3')
-        sp_convert.add_argument('--mipmap', type=int, default=1, help='Mipmap count of the output IMG. Default option is 1')
+        sp_convert.add_argument('--mipmap', type=int, default=1, help='Mipmap count of the output IMG')
         sp_convert.add_argument('--flip', action="store_true", default=False, help='Vertically flip the output IMG. Not supported on Wii textures')
 
-        sp_info = sp.add_parser('info', help='Prints the informations about the IMG file')
+        sp_info = sp.add_parser('info', help='Prints information about the IMG file')
         sp_info.set_defaults(func=__info_args)
         sp_info.add_argument('input', help='Path of the input IMG file')
 
