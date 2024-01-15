@@ -36,7 +36,7 @@ ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wi
 
 `--height HEIGHT` Height of the output IMG.  Not supported on Wii textures
 
-`--format {BC1,BC2,BC3,R8G8B8A8}` DDS format of the output IMG, used in PS3 and X360 textures. Default option is `BC1`
+`--format {BC1,BC2,BC3,R8G8B8A8}` DDS format of the output IMG, used in PS3, X360 and Wii U textures. Default option is `BC1`
 
 `--tex0 {CMPR,RGB5A3,IA4}` TEX0 format of the output IMG, used in Wii textures. Default option is `RGB5A3`
 

@@ -1,30 +1,30 @@
 from enum import Enum
-from textureformat import IOSFormat, WiiUFormat
+from textureformat import TextureFormat
+from typing import Literal
 
 class Platform(Enum):
     """
     Enum of the supported platforms
     """
-    X360 = ('Xbox 360', 'big', None, 1)
-    PS3 = ('PlayStation 3', 'big', None, 1)
-    WII = ('Wii', 'big', None, 1)
-    WIIU = ('Wii U', 'big', WiiUFormat.GTX, 1)
-    IOS = ('iOS', 'little', IOSFormat.PVR, 0)
+    X360 = ('Xbox 360', 'big', 1)
+    PS3 = ('PlayStation 3', 'big', 1)
+    WII = ('Wii', 'big', 1)
+    WIIU = ('Wii U', 'big', 1)
+    IOS = ('iOS', 'little', 0)
 
-    def __init__(self, fullname, byteorder, texture, mipmap):
+    def __init__(self, fullname: str, byteorder: Literal['little', 'big'], mipmap: int):
         self.fullname = fullname
         self.byteorder = byteorder
-        self.texture = texture # Default format
         self.mipmap = mipmap # Default mipmap count
 
-    def get_mipmap_from_img(self, header):
+    def get_mipmap_from_img(self, header: bytes):
         """
         Return the mipmap count from the specified IMG header and platform
         """
         return int.from_bytes(header[16:18], byteorder=self.byteorder) + self.mipmap
 
     @staticmethod
-    def from_string(value):
+    def from_string(value: str):
         """
         Return the platform associated with its name as defined in the command line options
         """
@@ -42,7 +42,7 @@ class Game(Enum):
     DJH2 = 'DJ Hero 2'
 
     @staticmethod
-    def from_string(value):
+    def from_string(value: str):
         """
         Return the game associated with its name as defined in the command line options
         """
@@ -66,12 +66,12 @@ class IMGFormat(Enum):
     DJH2PS3 = (Platform.PS3, Game.DJH2, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
     DJH2WII = (Platform.WII, Game.DJH2, bytes([0x00, 0x01, 0x00, 0x00, 0x00, 0x00]))
 
-    def __init__(self, platform, game, img):
+    def __init__(self, platform: Platform, game: Game, img: bytes):
         self.platform = platform
         self.game = game
         self.img = img
 
-    def get_header(self, width, height, texture, mipmap=1):
+    def get_header(self, width: int, height: int, texture: TextureFormat, mipmap=1):
         """
         Return a IMG header with specified width, height, mipmap count and texture format values
         """
@@ -87,7 +87,7 @@ class IMGFormat(Enum):
         return header
 
     @staticmethod
-    def from_enums(platform, game):
+    def from_enums(platform: Platform, game: Game):
         """
         Return the IMGFormat associated with its platform and game combination
         """
@@ -97,7 +97,7 @@ class IMGFormat(Enum):
         raise ValueError('Unknown IMG format. This platform and/or game may not be supported')
 
     @staticmethod
-    def from_img(value):
+    def from_img(value: bytes):
         """
         Return the IMGFormat associated with its IMG header values
         """

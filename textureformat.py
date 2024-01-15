@@ -5,26 +5,26 @@ class TextureFormat():
     """
     Base class of the supported texture formats
     """
-    def __init__(self, img):
+    def __init__(self, img: bytes):
         self.img = img
 
 class BlockTextureFormat(TextureFormat):
     """
     Base class of the supported block based texture formats
     """
-    def __init__(self, img, width, height, size):
+    def __init__(self, img: bytes, width: int, height: int, size: int):
         TextureFormat.__init__(self, img)
         self.width = width # Block width
         self.height = height # Block height
         self.size = size # Block size
 
-    def get_size(self, width, height):
+    def get_size(self, width: int, height: int):
         """
         Return the size of the texture with the specified width and height values
         """
         return max(1, (width + self.width - 1) // self.width) * max(1, (height + self.height - 1) // self.height) * self.size
 
-    def get_size_mipmap(self, width, height, mipmap):
+    def get_size_mipmap(self, width: int, height: int, mipmap: int):
         """
         Return the size of the texture with specifed width, height and mipmap count
         """
@@ -39,26 +39,17 @@ class BlockTextureFormat(TextureFormat):
 
         return size
 
-class WiiUFormat(TextureFormat, Enum):
-    """
-    Enum of the supported Wii U texture formats
-    """
-    GTX = (bytes([0x00, 0x05, 0x00, 0x00]))
-
-    def __init__(self, img):
-        TextureFormat.__init__(self, img)
-
-class IOSFormat(TextureFormat, Enum):
+class PVRFormat(TextureFormat, Enum):
     """
     Enum of the supported iOS texture formats
     """
-    PVR = (bytes([0x00, 0x00, 0x00, 0x00]))
+    PVRTC1_4 = (bytes([0x00, 0x00, 0x00, 0x00]))
 
-    def __init__(self, img):
+    def __init__(self, img: bytes):
         TextureFormat.__init__(self, img)
 
     @staticmethod
-    def get_sizes_from_header(header):
+    def get_sizes_from_header(header: bytes):
         """
         Return the width and height values from the PVR header of a texture
         """
@@ -73,18 +64,18 @@ class DDSFormat(BlockTextureFormat, Enum):
     BC3 = (bytes([0x00, 0x09, 0x00, 0xFF]), bytes([0x44, 0x58, 0x54, 0x35, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), 16, True) # DXT5
     R8G8B8A8 = (bytes([0x00, 0x03, 0x00, 0x00]), bytes([0x44, 0x58, 0x31, 0x30, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x1C, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]), 32, False)
 
-    def __init__(self, img, dxt, size, compressed):
+    def __init__(self, img: bytes, dxt: bytes, size: int, compressed: bool):
         BlockTextureFormat.__init__(self, img, 4, 4, size)
         self.dxt = dxt
         self.compressed = compressed
 
-    def get_pitch(self, width):
+    def get_pitch(self, width: int):
         """
         Return the pitch of the DDS texture with the specified width
         """
         return (width * self.size + 7) // 8
 
-    def get_flags(self, mipmap):
+    def get_flags(self, mipmap: int):
         """
         Return the flags of the DDS header with the specified mipmap count
         """
@@ -94,7 +85,7 @@ class DDSFormat(BlockTextureFormat, Enum):
             flags |= 0b00000010_00000000
         return flags
 
-    def get_header(self, width, height, mipmap):
+    def get_header(self, width: int, height: int, mipmap: int):
         """
         Return a DDS header with the specified width, height and mipmap count values
         """
@@ -126,14 +117,14 @@ class DDSFormat(BlockTextureFormat, Enum):
         return 84 + len(self.dxt)
 
     @staticmethod
-    def get_sizes_from_header(header):
+    def get_sizes_from_header(header: bytes):
         """
         Return the width and height values from the DDS header of a texture
         """
         return int.from_bytes(header[16:20], byteorder='little'), int.from_bytes(header[12:16], byteorder='little')
 
     @staticmethod
-    def from_string(value):
+    def from_string(value: str):
         """
         Return the DDS format associated with its name as defined in the command line options
         """
@@ -143,7 +134,7 @@ class DDSFormat(BlockTextureFormat, Enum):
         raise ValueError('Unknown format')
 
     @staticmethod
-    def from_img(value):
+    def from_img(value: bytes):
         """
         Return the DDS format associated with its IMG header value
         """
@@ -160,11 +151,11 @@ class TEX0Format(BlockTextureFormat, Enum):
     RGB5A3 = (bytes([0x00, 0x02, 0x00, 0x00]), bytes([0x00, 0x00, 0x00, 0x05]), 4, 4, 32)
     IA4 = (bytes([0x00, 0x01, 0x00, 0x00]), bytes([0x00, 0x00, 0x00, 0x02]), 8, 4, 32)
 
-    def __init__(self, img, tex0, width, height, size):
+    def __init__(self, img: bytes, tex0: bytes, width: int, height: int, size: int):
         BlockTextureFormat.__init__(self, img, width, height, size)
         self.tex0 = tex0
 
-    def get_header(self, width, height, mipmap):
+    def get_header(self, width: int, height: int, mipmap: int):
         """
         Return a TEX0 header with the specified width, height and mipmap count values
         """
@@ -188,14 +179,14 @@ class TEX0Format(BlockTextureFormat, Enum):
         return header
 
     @staticmethod
-    def get_sizes_from_header(header):
+    def get_sizes_from_header(header: bytes):
         """
         Return the width and height values from the TEX0 header of a texture
         """
         return int.from_bytes(header[28:30], byteorder='big'), int.from_bytes(header[30:32], byteorder='big')
 
     @staticmethod
-    def from_string(value):
+    def from_string(value: str):
         """
         Return the TEX0 format associated with its name as defined in the command line options
         """
@@ -205,7 +196,7 @@ class TEX0Format(BlockTextureFormat, Enum):
         raise ValueError('Unknown format')
 
     @staticmethod
-    def from_img(value):
+    def from_img(value: bytes):
         """
         Return the TEX0 format associated with its IMG header value
         """

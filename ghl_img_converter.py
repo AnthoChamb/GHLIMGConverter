@@ -2,13 +2,14 @@ import configparser
 import os
 import subprocess
 
-from textureformat import DDSFormat, IOSFormat, TEX0Format
 from imgformat import IMGFormat, Platform, Game
+from textureformat import DDSFormat, PVRFormat, TEX0Format
+from typing import Optional
 
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-def __read(filename):
+def __read(filename: str):
     """
     Read the specified file.
     Return a byte array of the file.
@@ -18,7 +19,7 @@ def __read(filename):
     file.close()
     return blob
 
-def __read_header(filename):
+def __read_header(filename: str):
     """
     Read the specified file.
     Return a byte array of the IMG header.
@@ -28,7 +29,7 @@ def __read_header(filename):
     file.close()
     return header
 
-def __write(dest, blob):
+def __write(dest: str, blob: bytes):
     """
     Write binary to the destination file.
     """
@@ -36,13 +37,13 @@ def __write(dest, blob):
     file.write(blob)
     file.close()
 
-def __create__pvrtextoolcli(source, dest, ext, width, height, texture, mipmap, flip):
+def __create__pvrtextoolcli(source: str, dest: str, ext: str, width: int, height: int, texture: str, mipmap: int, flip: bool):
     """
     Convert the source image using PVRTexToolCLI
     """
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '" -o "' + dest + ext + '"' + ('' if width == None or height == None else (' -r ' + str(width) + ',' + str(height))) + ' -f ' +texture + ' -m ' + str(mipmap) + (' -flip y' if flip else ''))
 
-def create_ps3_img(source, dest, width=None, height=None, dds=DDSFormat.BC1, game=Game.GHL, mipmap=1, flip=False):
+def create_ps3_img(source: str, dest: str, width: Optional[int]=None, height: Optional[int]=None, dds=DDSFormat.BC1, game=Game.GHL, mipmap=1, flip=False):
     """
     Convert the source image file to a PlayStation 3 IMG file with the specified size, format, game and mipmap count.
     """
@@ -65,16 +66,16 @@ def create_ps3_img(source, dest, width=None, height=None, dds=DDSFormat.BC1, gam
 
     __write(dest, blob)
 
-def create_ios_img(source, dest, width=None, height=None, mipmap=1, flip=False):
+def create_ios_img(source: str, dest: str, width: Optional[int]=None, height: Optional[int]=None, pvr=PVRFormat.PVRTC1_4, mipmap=1, flip=False):
     """
     Convert the source image file to a GHL iOS IMG file with the specified size and mipmap count.
     """
-    __create__pvrtextoolcli(source, dest, '.pvr', width, height, 'PVRTC1_4', mipmap, flip)
+    __create__pvrtextoolcli(source, dest, '.pvr', width, height, pvr.name, mipmap, flip)
 
     blob = __read(dest + '.pvr')
 
     if width == None or height == None:
-        width, height = IOSFormat.get_sizes_from_header(blob)
+        width, height = PVRFormat.get_sizes_from_header(blob)
 
     os.remove(dest + '.pvr')
 
@@ -83,11 +84,11 @@ def create_ios_img(source, dest, width=None, height=None, mipmap=1, flip=False):
     blob[48:52] = (15).to_bytes(4, byteorder='little')
     
     # Add GHL iOS IMG 20 bytes header
-    blob = IMGFormat.GHLIOS.get_header(width, height, Platform.IOS.texture, mipmap) + blob
+    blob = IMGFormat.GHLIOS.get_header(width, height, pvr, mipmap) + blob
 
     __write(dest, blob)
 
-def create_x360_img(source, dest, width=None, height=None, dds=DDSFormat.BC1, game=Game.GHL, mipmap=1, flip=False):
+def create_x360_img(source: str, dest: str, width: Optional[int]=None, height: Optional[int]=None, dds=DDSFormat.BC1, game=Game.GHL, mipmap=1, flip=False):
     """
     Convert the source image file to a Xbox 360 IMG file with the specified size, format, game and mipmap count.
     """
@@ -114,14 +115,14 @@ def create_x360_img(source, dest, width=None, height=None, dds=DDSFormat.BC1, ga
 
     __write(dest, blob)
 
-def create_wiiu_img(source, dest, width=None, height=None, mipmap=1, flip=False):
+def create_wiiu_img(source: str, dest: str, width: Optional[int]=None, height: Optional[int]=None, dds=DDSFormat.BC1, mipmap=1, flip=False):
     """
     Convert the source image file to a GHL Wii U IMG file with the specified size and mipmap count.
     """
-    __create__pvrtextoolcli(source, dest, '.temp.dds', width, height, DDSFormat.BC1.name, mipmap, flip)
+    __create__pvrtextoolcli(source, dest, '.temp.dds', width, height, dds.name, mipmap, flip)
 
     # Convert the temporary file to a GTX texture
-    subprocess.call('python ' + config['path']['gtx_extract'] + ' -o "' + dest + '.gtx" "' + dest + '.temp.dds"', shell=True)
+    subprocess.call('python3 ' + config['path']['gtx_extract'] + ' -o "' + dest + '.gtx" "' + dest + '.temp.dds"', shell=True)
 
     blob = __read(dest + '.temp.dds')
 
@@ -140,11 +141,11 @@ def create_wiiu_img(source, dest, width=None, height=None, mipmap=1, flip=False)
     blob = blob[:-32]
 
     # Replace default 32 bytes header with GHL Wii U IMG 20 bytes header
-    blob[0:32] = IMGFormat.GHLWIIU.get_header(width, height, Platform.WIIU.texture, mipmap)
+    blob[0:32] = IMGFormat.GHLWIIU.get_header(width, height, dds, mipmap)
 
     __write(dest, blob)
 
-def create_wii_img(source, dest, tex0=TEX0Format.RGB5A3, game=Game.DJH2, mipmap=1):
+def create_wii_img(source: str, dest: str, tex0=TEX0Format.RGB5A3, game=Game.DJH2, mipmap=1):
     """
     Convert the source image file to a Wii IMG file with the specified format, game and mipmap count.
     """
@@ -165,7 +166,7 @@ def create_wii_img(source, dest, tex0=TEX0Format.RGB5A3, game=Game.DJH2, mipmap=
 
     __write(dest, blob)
 
-def __extract_ps3_img(source, dest, width, height, dds, mipmap):
+def __extract_ps3_img(source: str, dest: str, width: int, height: int, dds: DDSFormat, mipmap: int):
     """
     Extract the source PS3 IMG file with the specified width, height, format and mipmap count to a decompressed format
     """
@@ -186,7 +187,7 @@ def __extract_ps3_img(source, dest, width, height, dds, mipmap):
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + dds.name)
     os.remove(source + '.dds')
 
-def __extract_ios_img(source, dest):
+def __extract_ios_img(source: str, dest: str):
     """
     Extract the source iOS IMG file to a decompressed format
     """
@@ -202,7 +203,7 @@ def __extract_ios_img(source, dest):
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.pvr" -o "' + source + '.pvr" -d "' + dest + '" -f PVRTC1_4_RGB')
     os.remove(source + '.pvr')
 
-def __extract_x360_img(source, dest, width, height, dds, mipmap):
+def __extract_x360_img(source: str, dest: str, width: int, height: int, dds: DDSFormat, mipmap: int):
     """
     Extract the source Xbox 360 IMG file with the specified width, height, format and mipmap count to a decompressed format
     """
@@ -227,7 +228,7 @@ def __extract_x360_img(source, dest, width, height, dds, mipmap):
     subprocess.call(config['path']['PVRTexToolCLI'] + ' -i "' + source + '.dds" -o "' + source + '.dds" -d "' + dest + '" -f ' + dds.name)
     os.remove(source + '.dds')
 
-def __extract_wiiu_img(source, dest):
+def __extract_wiiu_img(source: str, dest: str):
     """
     Extract the source Wii U IMG file to a decompressed format
     """
@@ -244,10 +245,10 @@ def __extract_wiiu_img(source, dest):
     __write(source + '.gtx', blob)
 
     # Convert GTX to decompressed format
-    subprocess.call(config['path']['gtx_extract'] + ' -o "' + dest + '" "' + source + '.gtx"', shell=True)
+    subprocess.call('python3 ' + config['path']['gtx_extract'] + ' -o "' + dest + '" "' + source + '.gtx"', shell=True)
     os.remove(source + '.gtx')
 
-def __extract_wii_img(source, dest, width, height, tex0, mipmap):
+def __extract_wii_img(source: str, dest: str, width: int, height: int, tex0: TEX0Format, mipmap: int):
     """
     Extract the source Wii IMG file with the specified width, height, format and mipmap count to a decompressed format
     """
@@ -263,7 +264,7 @@ def __extract_wii_img(source, dest, width, height, tex0, mipmap):
     subprocess.call(config['path']['wimgt'] + ' decode "' + source + '.tex" -d "' + dest + '" --no-mm')
     os.remove(source + '.tex')
 
-def extract_img(source, dest, platform=None):
+def extract_img(source: str, dest: str, platform: Optional[Platform]=None):
     """
     Extract the source IMG file to a decompressed format
     """
@@ -286,7 +287,7 @@ def extract_img(source, dest, platform=None):
     else:
         raise ValueError('Platform not supported')
 
-def __format_list(elements, separator = ', ', last_separator = ', ', empty = 'Empty', selector = lambda x : str(x)):
+def __format_list(elements: list, separator = ', ', last_separator = ', ', empty = 'Empty', selector = lambda x : str(x)):
     """
     Return a formatted string from a list of elements
     """
@@ -308,7 +309,7 @@ def __format_list(elements, separator = ', ', last_separator = ', ', empty = 'Em
     else:
         return empty
 
-def get_texture_formats(header, available_enums):
+def get_texture_formats(header: bytes, available_enums: list):
     """
     Return the texture formats associated with the specified IMG header value from a list of available texture format enums
     """
@@ -322,18 +323,18 @@ def get_texture_formats(header, available_enums):
     
     return textures
 
-def __get_texture_format_info(img, header):
+def __get_texture_format_info(img: IMGFormat, header: bytes):
     """
     Return a formatted string of the texture format information from an IMG format and its IMG header value
     """
-    if img.platform.texture != None:
-        return img.platform.texture.name
+    if img.platform == Platform.IOS:
+        return PVRFormat.PVRTC1_4.name
     else:
         available_enums = [DDSFormat] if img.game == Game.GHL else [DDSFormat, TEX0Format]
         textures = get_texture_formats(header, available_enums)
         return __format_list(textures, ', ', ' or ', 'Unknown format', lambda x : x.name)
 
-def print_info(path):
+def print_info(path: str):
     """
     Prints information about the IMG file
     """
@@ -368,7 +369,7 @@ def __extract_args(args):
     else:
         __extract_args_single(args, args.input, args.output if args.output != None else os.path.splitext(args.input)[0] + '.png')
 
-def __extract_args_single(args, source, dest):
+def __extract_args_single(args, source: str, dest: str):
     """
     Extract a single file using the command line arguments and the specified input and output
     """
@@ -395,18 +396,18 @@ def __convert_args(args):
     else:
         __convert_args_single(args, args.input, args.output if args.output != None else os.path.splitext(args.input)[0] + '.img')
 
-def __convert_args_single(args, source, dest):
+def __convert_args_single(args, source: str, dest: str):
     """
     Convert a single file using the command line arguments and the specified input and output
     """
     if args.platform == 'ps3':
         create_ps3_img(source, dest, args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game), args.mipmap, args.flip)
     elif args.platform == 'ios':
-        create_ios_img(source, dest, args.width, args.height, args.mipmap, args.flip)
+        create_ios_img(source, dest, args.width, args.height, PVRFormat.PVRTC1_4, args.mipmap, args.flip)
     elif args.platform == 'x360':
         create_x360_img(source, dest, args.width, args.height, DDSFormat.from_string(args.format), Game.from_string(args.game), args.mipmap, args.flip)
     elif args.platform == 'wiiu':
-        create_wiiu_img(source, dest, args.width, args.height, args.mipmap, args.flip)
+        create_wiiu_img(source, dest, args.width, args.height, DDSFormat.from_string(args.format), args.mipmap, args.flip)
     elif args.platform == 'wii':
         create_wii_img(source, dest, TEX0Format.from_string(args.tex0), Game.from_string(args.game), args.mipmap)
 
@@ -443,7 +444,7 @@ if __name__ == "__main__":
         sp_convert.add_argument('--game', choices=['ghl', 'djh', 'djh2'], default='ghl', help='Game to convert the IMG to, used in PS3 and X360 textures. Default option is ghl')
         sp_convert.add_argument('--width', type=int, help='Width of the output IMG. Not supported on Wii textures')
         sp_convert.add_argument('--height', type=int, help='Height of the output IMG. Not supported on Wii textures')
-        sp_convert.add_argument('--format', choices=['BC1', 'BC2', 'BC3', 'R8G8B8A8'], default='BC1', help='DDS format of the output IMG, used in PS3 and X360 textures. Default option is BC1')
+        sp_convert.add_argument('--format', choices=['BC1', 'BC2', 'BC3', 'R8G8B8A8'], default='BC1', help='DDS format of the output IMG, used in PS3, X360 and Wii U textures. Default option is BC1')
         sp_convert.add_argument('--tex0', choices=['CMPR', 'RGB5A3', 'IA4'], default='RGB5A3', help='TEX0 format of the output IMG, used in Wii textures. Default option is RGB5A3')
         sp_convert.add_argument('--mipmap', type=int, default=1, help='Mipmap count of the output IMG')
         sp_convert.add_argument('--flip', action="store_true", default=False, help='Vertically flip the output IMG. Not supported on Wii textures')
