@@ -6,7 +6,7 @@ A python script and module to extract and convert to IMG files used in some FSG 
 **Extract** a IMG file to a decompressed format
 
 ```
-ghl_img_converter.py extract input [--output OUTPUT] [--platform {ps3,ios,x360,wiiu,wii}]
+ghl_img_converter.py extract input [--output OUTPUT] [--platform {ps3,pc,x1,ios,x360,wiiu,wii}]
 ```
 
 #### Arguments
@@ -14,13 +14,13 @@ ghl_img_converter.py extract input [--output OUTPUT] [--platform {ps3,ios,x360,w
 
 `--output OUTPUT` Path to the output decompressed format or output folder
 
-`--platform {ps3,ios,x360,wiiu,wii}` Force extraction from the specified platform
+`--platform {ps3,pc,x1,ios,x360,wiiu,wii}` Force extraction from the specified platform
 
 ### Conversion
 **Convert** an image to a IMG file
 
 ```
-ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wiiu,wii} [--game {ghl,djh,djh2}] [--width WIDTH] [--height HEIGHT] [--format {BC1,BC2,BC3,R8G8B8A8}] [--tex0 {CMPR,RGB5A3,IA4}] [--mipmap MIPMAP] [--flip]
+ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,pc,x1,ios,x360,wiiu,wii} [--game {ghl,djh,djh2}] [--width WIDTH] [--height HEIGHT] [--format {BC1,BC2,BC3,R8G8B8A8}] [--tex0 {CMPR,RGB5A3,IA4}] [--mipmap MIPMAP] [--flip]
 ```
 
 #### Arguments
@@ -28,7 +28,7 @@ ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wi
 
 `--output OUTPUT` Path to the output IMG or folder
 
-`--platform {ps3,ios,x360,wiiu,wii}` Platform to convert the IMG to
+`--platform {ps3,pc,x1,ios,x360,wiiu,wii}` Platform to convert the IMG to
 
 `--game {ghl,djh,djh2}` Game to convert the IMG to, used in PS3 and X360 textures. Default option is `ghl`
 
@@ -36,7 +36,7 @@ ghl_img_converter.py convert input [--output OUTPUT] --platform {ps3,ios,x360,wi
 
 `--height HEIGHT` Height of the output IMG.  Not supported on Wii textures
 
-`--format {BC1,BC2,BC3,R8G8B8A8}` DDS format of the output IMG, used in PS3, X360 and Wii U textures. Default option is `BC1`
+`--format {BC1,BC2,BC3,R8G8B8A8}` DDS format of the output IMG, used in PS3, PC, X1, X360 and Wii U textures. Default option is `BC1`
 
 `--tex0 {CMPR,RGB5A3,IA4}` TEX0 format of the output IMG, used in Wii textures. Default option is `RGB5A3`
 
